@@ -709,7 +709,7 @@ namespace Morfologik.Stemming
         /// <param name="word">The word to apply replacements to.</param>
         /// <param name="replacements">A dictionary of replacements (from-&gt;to).</param>
         /// <returns>New string with all replacements applied.</returns>
-        public static J2N.Text.ICharSequence ApplyReplacements(J2N.Text.ICharSequence word, Lucene.Net.Support.LinkedHashMap<string, string> replacements)
+        public static ICharSequence ApplyReplacements(ICharSequence word, IDictionary<string, string> replacements)
         {
             // quite horrible from performance point of view; this should really be a transducer.
             StringBuilder sb = new StringBuilder();
@@ -730,7 +730,7 @@ namespace Morfologik.Stemming
         /// <param name="word">The word to apply replacements to.</param>
         /// <param name="replacements">A dictionary of replacements (from-&gt;to).</param>
         /// <returns>New string with all replacements applied.</returns>
-        public static char[] ApplyReplacements(char[] word, Lucene.Net.Support.LinkedHashMap<string, string> replacements)
+        public static char[] ApplyReplacements(char[] word, IDictionary<string, string> replacements)
         {
             // quite horrible from performance point of view; this should really be a transducer.
             StringBuilder sb = new StringBuilder();
@@ -751,7 +751,7 @@ namespace Morfologik.Stemming
         /// <param name="word">The word to apply replacements to.</param>
         /// <param name="replacements">A dictionary of replacements (from-&gt;to).</param>
         /// <returns>New string with all replacements applied.</returns>
-        public static StringBuilder ApplyReplacements(StringBuilder word, Lucene.Net.Support.LinkedHashMap<string, string> replacements)
+        public static StringBuilder ApplyReplacements(StringBuilder word, IDictionary<string, string> replacements)
         {
             // quite horrible from performance point of view; this should really be a transducer.
             StringBuilder sb = new StringBuilder();
@@ -772,7 +772,7 @@ namespace Morfologik.Stemming
         /// <param name="word">The word to apply replacements to.</param>
         /// <param name="replacements">A dictionary of replacements (from-&gt;to).</param>
         /// <returns>New string with all replacements applied.</returns>
-        public static string ApplyReplacements(string word, Lucene.Net.Support.LinkedHashMap<string, string> replacements)
+        public static string ApplyReplacements(string word, IDictionary<string, string> replacements)
         {
             // quite horrible from performance point of view; this should really be a transducer.
             StringBuilder sb = new StringBuilder();

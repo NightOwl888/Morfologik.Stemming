@@ -54,24 +54,24 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Replacement pairs for non-obvious candidate search in a speller dictionary.
         /// </summary>
-        private LinkedHashMap<string, IList<string>> replacementPairs = new LinkedHashMap<string, IList<string>>();
+        private IDictionary<string, IList<string>> replacementPairs = new Dictionary<string, IList<string>>();
 
         /// <summary>
         /// Conversion pairs for input conversion, for example to replace ligatures.
         /// </summary>
-        private LinkedHashMap<string, string> inputConversion = new LinkedHashMap<string, string>();
+        private IDictionary<string, string> inputConversion = new Dictionary<string, string>();
 
         /// <summary>
         /// Conversion pairs for output conversion, for example to replace ligatures.
         /// </summary>
-        private LinkedHashMap<string, string> outputConversion = new LinkedHashMap<string, string>();
+        private IDictionary<string, string> outputConversion = new Dictionary<string, string>();
 
         /// <summary>
         /// Equivalent characters (treated similarly as equivalent chars with and without
         /// diacritics). For example, Polish <c>ł</c> can be specified as equivalent to <c>l</c>.
         /// This implements a feature similar to hunspell MAP in the affix file.
         /// </summary>
-        private LinkedHashMap<char, IList<char>> equivalentChars = new LinkedHashMap<char, IList<char>>();
+        private IDictionary<char, IList<char>> equivalentChars = new Dictionary<char, IList<char>>();
 
         /// <summary>
         /// All attributes.
@@ -103,11 +103,11 @@ namespace Morfologik.Stemming
         public byte Separator => separator;
         public CultureInfo Culture => locale; // TODO: We probably want to pass this in rather than store it as a field
 
-        public LinkedHashMap<string, string> InputConversionPairs => inputConversion;
-        public LinkedHashMap<string, string> OutputConversionPairs => outputConversion;
+        public IDictionary<string, string> InputConversionPairs => inputConversion;
+        public IDictionary<string, string> OutputConversionPairs => outputConversion;
 
-        public LinkedHashMap<string, IList<string>> ReplacementPairs => replacementPairs;
-        public LinkedHashMap<char, IList<char>> EquivalentChars => equivalentChars;
+        public IDictionary<string, IList<string>> ReplacementPairs => replacementPairs;
+        public IDictionary<char, IList<char>> EquivalentChars => equivalentChars;
 
         // Dynamically fetched.
         public bool IsFrequencyIncluded => boolAttributes[DictionaryAttribute.FrequencyIncluded];
@@ -161,28 +161,28 @@ namespace Morfologik.Stemming
 
                     case DictionaryAttribute.InputConversion:
                         {
-                            LinkedHashMap<string, string> gvalue = (LinkedHashMap<string, string>)value;
+                            IDictionary<string, string> gvalue = (IDictionary<string, string>)value;
                             this.inputConversion = gvalue;
                         }
                         break;
 
                     case DictionaryAttribute.OutputConversion:
                         {
-                            LinkedHashMap<string, string> gvalue = (LinkedHashMap<string, string>)value;
+                            IDictionary<string, string> gvalue = (IDictionary<string, string>)value;
                             this.outputConversion = gvalue;
                         }
                         break;
 
                     case DictionaryAttribute.ReplacementPairs:
                         {
-                            LinkedHashMap<string, IList<string>> gvalue = (LinkedHashMap<string, IList<string>>)value;
+                            IDictionary<string, IList<string>> gvalue = (IDictionary<string, IList<string>>)value;
                             this.replacementPairs = gvalue;
                         }
                         break;
 
                     case DictionaryAttribute.EquivalentChars:
                         {
-                            LinkedHashMap<char, IList<char>> gvalue = (LinkedHashMap<char, IList<char>>)value;
+                            IDictionary<char, IList<char>> gvalue = (IDictionary<char, IList<char>>)value;
                             this.equivalentChars = gvalue;
                         }
                         break;

@@ -360,11 +360,11 @@ namespace Morfologik.Stemming
         /// Input conversion pairs to replace non-standard characters before search in a speller dictionary.
         /// For example, common ligatures can be replaced here.
         /// </summary>
-        public static readonly DictionaryAttribute<Lucene.Net.Support.LinkedHashMap<string, string>> InputConversion =
-            new DictionaryAttribute<Lucene.Net.Support.LinkedHashMap<string, string>>("fsa.dict.input-conversion", DictionaryAttribute.InputConversion,
+        public static readonly DictionaryAttribute<Dictionary<string, string>> InputConversion =
+            new DictionaryAttribute<Dictionary<string, string>>("fsa.dict.input-conversion", DictionaryAttribute.InputConversion,
             fromString: (string propertyName, string value) =>
             {
-                var conversionPairs = new Lucene.Net.Support.LinkedHashMap<string, string>();
+                var conversionPairs = new Dictionary<string, string>();
                 string[] replacements = PairSplit.Split(value);
                 foreach (var stringPair in replacements)
                 {
@@ -390,11 +390,11 @@ namespace Morfologik.Stemming
         /// <para/>
         /// Useful for dictionaries that do have certain standards imposed.
         /// </summary>
-        public static readonly DictionaryAttribute<Lucene.Net.Support.LinkedHashMap<string, string>> OutputConversion =
-            new DictionaryAttribute<Lucene.Net.Support.LinkedHashMap<string, string>>("fsa.dict.output-conversion", DictionaryAttribute.OutputConversion,
+        public static readonly DictionaryAttribute<Dictionary<string, string>> OutputConversion =
+            new DictionaryAttribute<Dictionary<string, string>>("fsa.dict.output-conversion", DictionaryAttribute.OutputConversion,
             fromString: (string propertyName, string value) =>
             {
-                var conversionPairs = new Lucene.Net.Support.LinkedHashMap<string, string>();
+                var conversionPairs = new Dictionary<string, string>();
                 string[] replacements = PairSplit.Split(value);
                 foreach (var stringPair in replacements)
                 {
@@ -420,11 +420,11 @@ namespace Morfologik.Stemming
         /// and this may be specified here to allow looking for replacements of <c>rz</c> with <c>ż</c>
         /// and vice versa.
         /// </summary>
-        public static readonly DictionaryAttribute<Lucene.Net.Support.LinkedHashMap<string, IList<string>>> ReplacementPairs =
-            new DictionaryAttribute<Lucene.Net.Support.LinkedHashMap<string, IList<string>>>("fsa.dict.speller.replacement-pairs", DictionaryAttribute.ReplacementPairs,
+        public static readonly DictionaryAttribute<Dictionary<string, IList<string>>> ReplacementPairs =
+            new DictionaryAttribute<Dictionary<string, IList<string>>>("fsa.dict.speller.replacement-pairs", DictionaryAttribute.ReplacementPairs,
             fromString: (string propertyName, string value) =>
             {
-                var replacementPairs = new Lucene.Net.Support.LinkedHashMap<string, IList<string>>();
+                var replacementPairs = new Dictionary<string, IList<string>>();
                 string[] replacements = PairSplit.Split(value);
                 foreach (var stringPair in replacements)
                 {
@@ -450,11 +450,11 @@ namespace Morfologik.Stemming
         /// <para/>
         /// This implements a feature similar to hunspell MAP in the affix file.
         /// </summary>
-        public static readonly DictionaryAttribute<Lucene.Net.Support.LinkedHashMap<char, IList<char>>> EquivalentChars =
-            new DictionaryAttribute<Lucene.Net.Support.LinkedHashMap<char, IList<char>>>("fsa.dict.speller.equivalent-chars", DictionaryAttribute.EquivalentChars,
+        public static readonly DictionaryAttribute<Dictionary<char, IList<char>>> EquivalentChars =
+            new DictionaryAttribute<Dictionary<char, IList<char>>>("fsa.dict.speller.equivalent-chars", DictionaryAttribute.EquivalentChars,
             fromString: (string propertyName, string value) =>
             {
-                var equivalentCharacters = new Lucene.Net.Support.LinkedHashMap<char, IList<char>>();
+                var equivalentCharacters = new Dictionary<char, IList<char>>();
                 string[] eqChars = PairSplit.Split(value);
                 foreach (var characterPair in eqChars)
                 {

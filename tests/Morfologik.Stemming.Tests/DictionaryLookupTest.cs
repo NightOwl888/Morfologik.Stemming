@@ -15,7 +15,7 @@ namespace Morfologik.Stemming
         [Test]
         public void TestApplyReplacements()
         {
-            LinkedHashMap<String, String> conversion = new LinkedHashMap<string, string>();
+            Dictionary<String, String> conversion = new Dictionary<string, string>();
             conversion["'"] = "`";
             conversion["fi"] = "ﬁ";
             conversion["\\a"] = "ą";
