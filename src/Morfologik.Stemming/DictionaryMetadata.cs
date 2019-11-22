@@ -126,9 +126,13 @@ namespace Morfologik.Stemming
         public DictionaryMetadata(IDictionary<DictionaryAttribute, string> attrs)
         {
             this.boolAttributes = new Dictionary<DictionaryAttribute, bool>();
-            this.attributes = new Dictionary<DictionaryAttribute, string>(attrs);
-
-            IDictionary<DictionaryAttribute, string> attributeMap = new Dictionary<DictionaryAttribute, string>(DefaultAttributes.Union(attrs).ToDictionary(k => k.Key, v => v.Value));
+            this.attributes = new Dictionary<DictionaryAttribute, string>();
+            IDictionary<DictionaryAttribute, string> attributeMap = new Dictionary<DictionaryAttribute, string>(DefaultAttributes);
+            foreach (var attr in attrs)
+            {
+                attributes[attr.Key] = attr.Value;
+                attributeMap[attr.Key] = attr.Value;
+            }
 
             // Convert some attrs from the map to local fields for performance reasons.
             ISet<DictionaryAttribute> requiredAttributes = new HashSet<DictionaryAttribute>(RequiredAttributes);
