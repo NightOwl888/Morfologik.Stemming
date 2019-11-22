@@ -1,5 +1,4 @@
 ﻿using J2N.Collections;
-using Lucene.Net.Support;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -195,7 +194,7 @@ namespace Morfologik.Stemming
                     case DictionaryAttribute.ConvertCase:
                     case DictionaryAttribute.RunOnWords:
                     case DictionaryAttribute.FrequencyIncluded:
-                        this.boolAttributes.Put(e.Key, (bool)value);
+                        this.boolAttributes[e.Key] = (bool)value;
                         break;
 
                     case DictionaryAttribute.Author:

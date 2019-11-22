@@ -1,5 +1,4 @@
 ﻿using J2N;
-using Lucene.Net.Support;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -186,9 +185,15 @@ namespace Morfologik.TestFramework.RandomizedTesting.Generators
 
         #region From Character Class
 
-        private const int MaxCodePoint = 0x10FFFF;
-        private const int MinCodePoint = 0x000000;
-        private const int MinSupplementaryCodePoint = 0x010000;
+        internal const int MaxCodePoint = 0x10FFFF;
+        internal const int MinCodePoint = 0x000000;
+        internal const int MinSupplementaryCodePoint = 0x010000;
+
+        internal const char MinLowSurrogate = '\uDC00';
+        internal const char MaxLowSurrogate = '\uDFFF';
+
+        internal const char MinHighSurrogate = '\uD800';
+        internal const char MaxHighSurrogate = '\uDBFF';
 
         private static int CharCount(int codePoint)
         {
@@ -224,5 +229,36 @@ namespace Morfologik.TestFramework.RandomizedTesting.Generators
         }
 
         #endregion
+    }
+
+    internal static class ExtensionMethods
+    {
+        public static int CodePointAt(this string seq, int index)
+        {
+            char c1 = seq[index++];
+            if (char.IsHighSurrogate(c1))
+            {
+                if (index < seq.Length)
+                {
+                    char c2 = seq[index];
+                    if (char.IsLowSurrogate(c2))
+                    {
+                        return ToCodePoint(c1, c2);
+                    }
+                }
+            }
+            return c1;
+        }
+
+        public static int ToCodePoint(char high, char low)
+        {
+            // Optimized form of:
+            // return ((high - MIN_HIGH_SURROGATE) << 10)
+            //         + (low - MIN_LOW_SURROGATE)
+            //         + MIN_SUPPLEMENTARY_CODE_POINT;
+            return ((high << 10) + low) + (CodepointSetGenerator.MinSupplementaryCodePoint
+                                           - (CodepointSetGenerator.MinHighSurrogate << 10)
+                                           - CodepointSetGenerator.MinLowSurrogate);
+        }
     }
 }

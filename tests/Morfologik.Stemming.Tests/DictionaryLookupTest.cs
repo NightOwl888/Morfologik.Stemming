@@ -1,7 +1,5 @@
-﻿using Lucene.Net.Support;
-using Morfologik.Fsa;
+﻿using Morfologik.Fsa;
 using Morfologik.TestFramework;
-//using Morfologik.TestFramework.Http;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;

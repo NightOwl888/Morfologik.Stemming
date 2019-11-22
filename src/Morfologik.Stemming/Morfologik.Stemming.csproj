@@ -24,7 +24,6 @@
   
   <ItemGroup>
     <PackageReference Include="J2N" Version="$(J2NPackageReferenceVersion)" />
-    <PackageReference Include="Lucene.Net" Version="$(LuceneNetPackageReferenceVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
