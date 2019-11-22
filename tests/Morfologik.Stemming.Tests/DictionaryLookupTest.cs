@@ -12,27 +12,6 @@ namespace Morfologik.Stemming
 {
     public class DictionaryLookupTest : TestCase
     {
-        //private int port;
-        //private string host;
-        //private TestServer server;
-        //private ResourceService resourceService;
-
-        //public override void SetUp()
-        //{
-        //    base.SetUp();
-
-        //    resourceService = new ResourceService(this.GetType());
-        //    server = NewHttpServer<ResourceServlet>(resourceService);
-        //    host = ServerHost(server);
-        //    port = ServerPort(server);
-        //}
-
-        //public override void TearDown()
-        //{
-        //    StopHttpServer(server);
-        //    base.TearDown();
-        //}
-
         [Test]
         public void TestApplyReplacements()
         {
@@ -303,9 +282,6 @@ namespace Morfologik.Stemming
         [Test]
         public void TestGetSeparator()
         {
-            //Uri url = new Uri(ResourceService.NormalizedUrl(host, port, ResourceService.Resources + "/" + "test-separators.dict"));
-            //server.CreateHandler();
-
             //URL url = this.GetType().getResource("test-separators.dict");
             string dict = "test-separators.dict";
             DictionaryLookup s = new DictionaryLookup(ReadDictionary(dict));

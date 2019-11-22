@@ -1,7 +1,5 @@
 ﻿using J2N.IO;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace Morfologik.Stemming
