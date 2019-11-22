@@ -1,0 +1,58 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
+    <RootNamespace>Morfologik.Stemming.Polish</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Label="NuGet Package Settings">
+    <AssemblyTitle>Mofologik.Polish</AssemblyTitle>
+    <Description>
+      Morfologik Stemming (Polish Dictionary). Morfologik is a project aiming at generating Polish morphosyntactic
+      dictionaries (hence the name) used for part-of-speech tagging and
+      part-of-speech synthesis.
+    </Description>
+    <PackageTags>$(PackageTags);fsa;finite;state;automata;automaton;traversal</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Morfologik.Stemming\Morfologik.Stemming.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="J2N" Version="$(J2NPackageReferenceVersion)" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+    <DefineConstants>$(DefineConstants);NETSTANDARD;FEATURE_SERIALIZABLE</DefineConstants>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
+    <DefineConstants>$(DefineConstants);FEATURE_SERIALIZABLE;FEATURE_SERIALIZABLE_EXCEPTIONS</DefineConstants>
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="polish.dict" />
+    <None Remove="polish.info" />
+    <None Remove="polish.LICENSE.Polish.txt" />
+    <None Remove="polish.LICENSE.txt" />
+    <None Remove="polish.README.Polish.txt" />
+    <None Remove="polish.README.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="polish.dict" />
+    <EmbeddedResource Include="polish.info" />
+    <EmbeddedResource Include="polish.LICENSE.Polish.txt" />
+    <EmbeddedResource Include="polish.LICENSE.txt" />
+    <EmbeddedResource Include="polish.README.Polish.txt" />
+    <EmbeddedResource Include="polish.README.txt" />
+  </ItemGroup>
+
+</Project>

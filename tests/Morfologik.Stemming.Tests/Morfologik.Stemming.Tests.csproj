@@ -1,0 +1,56 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Morfologik.Stemming</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="J2N" Version="$(J2NPackageReferenceVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Morfologik.Stemming\Morfologik.Stemming.csproj" />
+    <ProjectReference Include="..\Morfologik.TestFramework\Morfologik.TestFramework.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="escape-separator.info" />
+    <None Remove="test-diacritics-utf8.dict" />
+    <None Remove="test-diacritics-utf8.info" />
+    <None Remove="test-infix.dict" />
+    <None Remove="test-infix.info" />
+    <None Remove="test-prefix.dict" />
+    <None Remove="test-prefix.info" />
+    <None Remove="test-removed-props.dict" />
+    <None Remove="test-removed-props.info" />
+    <None Remove="test-separator-in-lookup.fsa" />
+    <None Remove="test-separator-in-lookup.in" />
+    <None Remove="test-separators.dict" />
+    <None Remove="test-separators.info" />
+    <None Remove="test-separators.txt" />
+    <None Remove="test-synth.dict" />
+    <None Remove="test-synth.info" />
+    <None Remove="unicode-separator.info" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="escape-separator.info" />
+    <EmbeddedResource Include="test-diacritics-utf8.dict" />
+    <EmbeddedResource Include="test-diacritics-utf8.info" />
+    <EmbeddedResource Include="test-infix.dict" />
+    <EmbeddedResource Include="test-infix.info" />
+    <EmbeddedResource Include="test-prefix.dict" />
+    <EmbeddedResource Include="test-prefix.info" />
+    <EmbeddedResource Include="test-removed-props.dict" />
+    <EmbeddedResource Include="test-removed-props.info" />
+    <EmbeddedResource Include="test-separator-in-lookup.fsa" />
+    <EmbeddedResource Include="test-separator-in-lookup.in" />
+    <EmbeddedResource Include="test-separators.dict" />
+    <EmbeddedResource Include="test-separators.info" />
+    <EmbeddedResource Include="test-separators.txt" />
+    <EmbeddedResource Include="test-synth.dict" />
+    <EmbeddedResource Include="test-synth.info" />
+    <EmbeddedResource Include="unicode-separator.info" />
+  </ItemGroup>
+
+</Project>

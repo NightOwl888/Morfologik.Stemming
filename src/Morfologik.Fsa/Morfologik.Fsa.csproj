@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Label="NuGet Package Settings">
+    <AssemblyTitle>Mofologik.Fsa</AssemblyTitle>
+    <Description>
+      Morfologik Finite State Automata Traversal. Morfologik is a project aiming at generating Polish morphosyntactic
+      dictionaries (hence the name) used for part-of-speech tagging and
+      part-of-speech synthesis.
+    </Description>
+    <PackageTags>$(PackageTags);fsa;finite;state;automata;automaton;traversal</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="J2N" Version="$(J2NPackageReferenceVersion)" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+    <DefineConstants>$(DefineConstants);NETSTANDARD;FEATURE_SERIALIZABLE</DefineConstants>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
+    <DefineConstants>$(DefineConstants);FEATURE_SERIALIZABLE;FEATURE_SERIALIZABLE_EXCEPTIONS</DefineConstants>
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+</Project>

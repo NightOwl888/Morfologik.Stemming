@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup Label="NuGet Package Reference Versions">
+    <J2NPackageReferenceVersion>1.0.0-alpha-0004</J2NPackageReferenceVersion>
+    <LuceneNetPackageReferenceVersion>4.8.0-beta00006</LuceneNetPackageReferenceVersion>
+    <MicrosoftNETTestSdkPackageReferenceVersion>16.1.1</MicrosoftNETTestSdkPackageReferenceVersion>
+    <NerdBankGitVersioningPackageReferenceVersion>[2.3.183]</NerdBankGitVersioningPackageReferenceVersion>
+    <NETStandardLibrary20PackageReferenceVersion>2.0.3</NETStandardLibrary20PackageReferenceVersion>
+    <NUnitPackageReferenceVersion>3.12.0</NUnitPackageReferenceVersion>
+    <NUnit3TestAdapterPackageReferenceVersion>3.15.1</NUnit3TestAdapterPackageReferenceVersion>
+    <SystemTextEncodingCodePagesPackageReferenceVersion>4.3.0</SystemTextEncodingCodePagesPackageReferenceVersion>
+  </PropertyGroup>
+</Project>

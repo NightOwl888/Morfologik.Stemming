@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Morfologik.Stemming.Polish.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Morfologik.Polish\Morfologik.Polish.csproj" />
+    <ProjectReference Include="..\Morfologik.TestFramework\Morfologik.TestFramework.csproj" />
+  </ItemGroup>
+
+</Project>
