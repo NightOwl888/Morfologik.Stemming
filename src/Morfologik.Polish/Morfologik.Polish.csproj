@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net451</TargetFrameworks>
     <RootNamespace>Morfologik.Stemming.Polish</RootNamespace>
   </PropertyGroup>
 
@@ -12,7 +12,7 @@
       dictionaries (hence the name) used for part-of-speech tagging and
       part-of-speech synthesis.
     </Description>
-    <PackageTags>$(PackageTags);fsa;finite;state;automata;automaton;traversal</PackageTags>
+    <PackageTags>$(PackageTags);polish;morphological;stemming;stemmer;dictionary</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

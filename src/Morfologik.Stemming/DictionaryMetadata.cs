@@ -1,4 +1,5 @@
-﻿using J2N.Collections;
+﻿using J2N;
+using J2N.Collections;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -305,7 +306,7 @@ namespace Morfologik.Stemming
         {
             IDictionary<DictionaryAttribute, string> map = new Dictionary<DictionaryAttribute, string>();
             var properties = new Dictionary<string, string>();
-            properties.Load(new StreamReader(metadataStream, System.Text.Encoding.UTF8));
+            properties.LoadProperties(new StreamReader(metadataStream, System.Text.Encoding.UTF8));
 
             // Handle back-compatibility for encoder specification.
             if (!properties.ContainsKey(DictionaryAttributeExtensions.Encoder.PropertyName))
@@ -369,7 +370,7 @@ namespace Morfologik.Stemming
                 properties[e.Key.GetPropertyName()] = e.Value;
             }
 
-            properties.Store(writer, "# " + GetType().Name);
+            properties.SaveProperties(writer, "# " + GetType().Name);
         }
 
         static DictionaryMetadata()
