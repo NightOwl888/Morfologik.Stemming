@@ -1,4 +1,4 @@
-﻿using J2N;
+﻿using J2N.Numerics;
 using System.IO;
 
 namespace Morfologik.Fsa

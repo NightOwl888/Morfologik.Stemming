@@ -1,5 +1,5 @@
-﻿using J2N;
-using J2N.IO;
+﻿using J2N.IO;
+using J2N.Numerics;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
