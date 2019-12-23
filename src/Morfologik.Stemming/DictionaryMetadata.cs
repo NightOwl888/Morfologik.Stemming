@@ -1,5 +1,6 @@
 ﻿using J2N;
 using J2N.Collections;
+using J2N.Text;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -216,8 +217,8 @@ namespace Morfologik.Stemming
 
             if (requiredAttributes.Any())
             {
-                throw new ArgumentException("At least one the required attributes was not provided: "
-                    + CollectionUtil.ToString(requiredAttributes));
+                throw new ArgumentException(string.Format(StringFormatter.CurrentCulture, "At least one the required attributes was not provided: {0}",
+                    requiredAttributes));
             }
 
             // Sanity check.
