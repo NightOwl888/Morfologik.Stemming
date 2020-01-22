@@ -117,7 +117,7 @@ namespace Morfologik.Stemming
         /// followed by a separator. The result is a stem (decompressed accordingly
         /// to the dictionary's specification) and an optional tag data.
         /// </summary>
-        public IList<WordData> Lookup(J2N.Text.ICharSequence word)
+        public IList<WordData> Lookup(ICharSequence word)
         {
             byte separator = dictionaryMetadata.Separator;
 #pragma warning disable 612, 618
@@ -718,7 +718,7 @@ namespace Morfologik.Stemming
             {
                 sb.Replace(e.Key, e.Value);
             }
-            return sb.ToCharSequence();
+            return sb.AsCharSequence();
         }
 
         /// <summary>

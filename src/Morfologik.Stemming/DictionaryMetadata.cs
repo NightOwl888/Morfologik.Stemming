@@ -1,5 +1,5 @@
 ﻿using J2N;
-using J2N.Collections;
+using J2N.Collections.Generic.Extensions;
 using J2N.Text;
 using System;
 using System.Collections.Generic;
@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using JCG = J2N.Collections.Generic;
 
 namespace Morfologik.Stemming
 {
@@ -55,24 +56,24 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Replacement pairs for non-obvious candidate search in a speller dictionary.
         /// </summary>
-        private IDictionary<string, IList<string>> replacementPairs = new Dictionary<string, IList<string>>();
+        private readonly IDictionary<string, IList<string>> replacementPairs = new JCG.LinkedDictionary<string, IList<string>>();
 
         /// <summary>
         /// Conversion pairs for input conversion, for example to replace ligatures.
         /// </summary>
-        private IDictionary<string, string> inputConversion = new Dictionary<string, string>();
+        private readonly IDictionary<string, string> inputConversion = new JCG.LinkedDictionary<string, string>();
 
         /// <summary>
         /// Conversion pairs for output conversion, for example to replace ligatures.
         /// </summary>
-        private IDictionary<string, string> outputConversion = new Dictionary<string, string>();
+        private readonly IDictionary<string, string> outputConversion = new JCG.LinkedDictionary<string, string>();
 
         /// <summary>
         /// Equivalent characters (treated similarly as equivalent chars with and without
         /// diacritics). For example, Polish <c>ł</c> can be specified as equivalent to <c>l</c>.
         /// This implements a feature similar to hunspell MAP in the affix file.
         /// </summary>
-        private IDictionary<char, IList<char>> equivalentChars = new Dictionary<char, IList<char>>();
+        private readonly IDictionary<char, IList<char>> equivalentChars = new JCG.LinkedDictionary<char, IList<char>>();
 
         /// <summary>
         /// All attributes.
@@ -97,7 +98,7 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Gets all metadata attributes.
         /// </summary>
-        public IDictionary<DictionaryAttribute, string> Attributes => attributes.ToUnmodifiableDictionary();
+        public IDictionary<DictionaryAttribute, string> Attributes => attributes.AsReadOnly();
 
         // Cached attrs.
         public string Encoding => encoding;
