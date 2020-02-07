@@ -13,12 +13,15 @@ namespace Morfologik.Stemming
         [Test]
         public void TestApplyReplacements()
         {
-            Dictionary<String, String> conversion = new Dictionary<string, string>();
-            conversion["'"] = "`";
-            conversion["fi"] = "ﬁ";
-            conversion["\\a"] = "ą";
-            conversion["Barack"] = "George";
-            conversion["_"] = "xx";
+            // .NET: As long as we don't delete anything, Dictionary will retain insertion order.
+            IDictionary<string, string> conversion = new Dictionary<string, string>
+            {
+                ["'"] = "`",
+                ["fi"] = "ﬁ",
+                ["\\a"] = "ą",
+                ["Barack"] = "George",
+                ["_"] = "xx"
+            };
             assertEquals("ﬁlut", DictionaryLookup.ApplyReplacements("filut", conversion));
             assertEquals("ﬁzdrygałką", DictionaryLookup.ApplyReplacements("fizdrygałk\\a", conversion));
             assertEquals("George Bush", DictionaryLookup.ApplyReplacements("Barack Bush", conversion));

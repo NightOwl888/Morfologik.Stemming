@@ -161,7 +161,7 @@ namespace Morfologik.Stemming
             //decoder.GetChars(tagBuffer, 0, tagBuffer.Length, tagCharSequence, 0);
             //return tagCharSequence.Length == 0 ? null : new string(tagCharSequence);
             tagCharSequence = BufferUtils.BytesToChars(decoder, tagBuffer, tagCharSequence);
-            return tagCharSequence.Length == 0 ? null : tagCharSequence.ToString().ToCharSequence();
+            return tagCharSequence.Length == 0 ? null : tagCharSequence.ToString().AsCharSequence();
         }
 
         /// <summary>
@@ -174,7 +174,7 @@ namespace Morfologik.Stemming
             //return stemCharSequence.Length == 0 ? null : new string(stemCharSequence);
 
             stemCharSequence = BufferUtils.BytesToChars(decoder, stemBuffer, stemCharSequence);
-            return stemCharSequence.Length == 0 ? null : stemCharSequence.ToString().ToCharSequence();
+            return stemCharSequence.Length == 0 ? null : stemCharSequence.ToString().AsCharSequence();
         }
 
         /// <summary>
@@ -229,7 +229,7 @@ namespace Morfologik.Stemming
         {
             if (chs is StringCharSequence)
                 return chs;
-            return chs.ToString().ToCharSequence();
+            return chs.ToString().AsCharSequence();
         }
 
         internal void Update(ByteBuffer wordBuffer, ICharSequence word)
@@ -243,10 +243,10 @@ namespace Morfologik.Stemming
             this.wordCharSequence = word;
         }
 
-        internal void Update(ByteBuffer wordBuffer, char[] word) => Update(wordBuffer, word.ToCharSequence());
+        internal void Update(ByteBuffer wordBuffer, char[] word) => Update(wordBuffer, word.AsCharSequence());
 
-        internal void Update(ByteBuffer wordBuffer, StringBuilder word) => Update(wordBuffer, word.ToCharSequence());
+        internal void Update(ByteBuffer wordBuffer, StringBuilder word) => Update(wordBuffer, word.AsCharSequence());
 
-        internal void Update(ByteBuffer wordBuffer, string word) => Update(wordBuffer, word.ToCharSequence());
+        internal void Update(ByteBuffer wordBuffer, string word) => Update(wordBuffer, word.AsCharSequence());
     }
 }
