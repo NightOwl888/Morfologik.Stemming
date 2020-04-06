@@ -15,10 +15,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\build\CommonAssemblyKeys.cs" Link="Properties\CommonAssemblyKeys.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Morfologik.Fsa\Morfologik.Fsa.csproj" />
   </ItemGroup>
   
@@ -30,18 +26,12 @@
     <PackageReference Include="System.Text.Encoding.CodePages" Version="$(SystemTextEncodingCodePagesPackageReferenceVersion)" />
   </ItemGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-    <DefineConstants>$(DefineConstants);NETSTANDARD;FEATURE_SERIALIZABLE</DefineConstants>
-    <DebugType>portable</DebugType>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <DefineConstants>$(DefineConstants);FEATURE_SERIALIZABLE;FEATURE_SERIALIZABLE_EXCEPTIONS</DefineConstants>
-    <DebugType>full</DebugType>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Morfologik.Stemming.Tests" />
+  </ItemGroup>
 
 </Project>
