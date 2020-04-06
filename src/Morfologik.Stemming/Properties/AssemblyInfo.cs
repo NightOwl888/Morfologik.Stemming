@@ -1,7 +1,3 @@
-﻿using Morfologik;
-using System;
-using System.Runtime.CompilerServices;
+﻿using System;
 
 [assembly: CLSCompliant(true)]
-
-[assembly: InternalsVisibleTo("Morfologik.Stemming.Tests, PublicKey=" + AssemblyKeys.PublicKey)]
