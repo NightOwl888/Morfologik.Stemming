@@ -1,7 +1,6 @@
 ﻿using J2N;
 using System;
 using System.IO;
-using System.Reflection;
 
 namespace Morfologik.TestFramework
 {
@@ -12,7 +11,7 @@ namespace Morfologik.TestFramework
         /// </summary>
         public static Stream getResourceAsStream(this Type t, string name)
         {
-            return t.GetTypeInfo().Assembly.FindAndGetManifestResourceStream(t, name);
+            return t.Assembly.FindAndGetManifestResourceStream(t, name);
         }
     }
 }
