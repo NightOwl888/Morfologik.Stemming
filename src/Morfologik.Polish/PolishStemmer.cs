@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Text;
 
 namespace Morfologik.Stemming.Polish
@@ -12,7 +11,7 @@ namespace Morfologik.Stemming.Polish
     /// A dictionary-based stemmer for the Polish language. Instances of this class
     /// are not thread safe.
     /// </summary>
-    /// <seealso cref="Morfologik.Stemming.DictionaryLookup"/>
+    /// <seealso cref="DictionaryLookup"/>
     public sealed class PolishStemmer : IStemmer, IEnumerable<WordData>
     {
         private const string ResourcePath = "Morfologik.Stemming.Polish.";
@@ -30,8 +29,8 @@ namespace Morfologik.Stemming.Polish
             lock (type)
             {
                 string dict = ResourcePath + DictionaryName;
-                using (var dictStream = type.GetTypeInfo().Assembly.GetManifestResourceStream(dict))
-                using (var metadataStream = type.GetTypeInfo().Assembly.GetManifestResourceStream(DictionaryMetadata.GetExpectedMetadataFileName(dict)))
+                using (var dictStream = type.Assembly.GetManifestResourceStream(dict))
+                using (var metadataStream = type.Assembly.GetManifestResourceStream(DictionaryMetadata.GetExpectedMetadataFileName(dict)))
                 {
                     if (dictStream == null)
                     {
