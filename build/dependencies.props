@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup Label="NuGet Package Reference Versions">
-    <J2NPackageReferenceVersion>2.0.0-beta-0008</J2NPackageReferenceVersion>
+    <J2NPackageReferenceVersion>2.0.0-beta-0010</J2NPackageReferenceVersion>
     <MicrosoftNETTestSdkPackageReferenceVersion>16.1.1</MicrosoftNETTestSdkPackageReferenceVersion>
     <NerdBankGitVersioningPackageReferenceVersion>[3.0.28]</NerdBankGitVersioningPackageReferenceVersion>
     <NETStandardLibrary20PackageReferenceVersion>2.0.3</NETStandardLibrary20PackageReferenceVersion>
