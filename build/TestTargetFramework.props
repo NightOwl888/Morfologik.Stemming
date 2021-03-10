@@ -4,14 +4,15 @@
     <!-- Changing this setting will allow testing on all target frameworks within Visual Studio 2017.
     Note that the main libraries are multi-targeted, so this has no effect on how they are compiled,
     this setting only affects the test projects. -->
-    <!--<TargetFramework>net451</TargetFramework>-->
+    <!--<TargetFramework>net461</TargetFramework>-->
     <!--<TargetFramework>netcoreapp2.1</TargetFramework>-->
+    <!--<TargetFramework>net5.0</TargetFramework>-->
     <TestAllTargetFrameworks>true</TestAllTargetFrameworks>
 
     <!-- Allow the build script to pass in the test frameworks to build for.
       This overrides the above TargetFramework setting. 
       TODO: Due to a parsing bug, we cannot pass a string with a ; to dotnet msbuild, so passing true as a workaround -->
-    <TargetFrameworks Condition=" '$(TestAllTargetFrameworks)' == 'true' ">netcoreapp2.1;net451</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(TestAllTargetFrameworks)' == 'true' ">net5.0;netcoreapp3.1;net461</TargetFrameworks>
     <TargetFramework Condition=" '$(TargetFrameworks)' != '' "></TargetFramework>
   </PropertyGroup>
   

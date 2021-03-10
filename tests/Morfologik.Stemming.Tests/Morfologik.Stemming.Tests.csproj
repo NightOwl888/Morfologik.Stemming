@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Morfologik.Stemming\Morfologik.Stemming.csproj" />
-    <ProjectReference Include="..\Morfologik.TestFramework\Morfologik.TestFramework.csproj" />
+    <ProjectReference Include="..\..\src\Morfologik.TestFramework\Morfologik.TestFramework.csproj" />
   </ItemGroup>
 
   <ItemGroup>
