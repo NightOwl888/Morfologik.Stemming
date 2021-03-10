@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Morfologik.Polish\Morfologik.Polish.csproj" />
-    <ProjectReference Include="..\Morfologik.TestFramework\Morfologik.TestFramework.csproj" />
+    <ProjectReference Include="..\..\src\Morfologik.TestFramework\Morfologik.TestFramework.csproj" />
   </ItemGroup>
 
 </Project>
