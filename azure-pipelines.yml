@@ -14,10 +14,11 @@ name: 'vNext$(rev:.r)' # Format for build number (will be overridden)
 # BuildConfiguration: 'Release'
 # BuildPlatform: 'Any CPU'
 # RunTests: 'true' (Optional - set to 'false' to disable test jobs - useful for debugging. If not provided, tests will be run.)
+# RunX86Tests: 'false' (Optional - set to 'true' to enable x86 tests)
 
 variables:
 - name: TestTargetFrameworks
-  value: 'netcoreapp2.1;net451'
+  value: 'net5.0;netcoreapp3.1;net461'
 - name: BinaryArtifactName
   value: 'testbinaries'
 - name: NuGetArtifactName
@@ -67,7 +68,8 @@ stages:
 - stage: Test_Stage
   displayName: 'Test Stage:'
   jobs:
-  - job: Test_netcoreapp2_1
+
+  - job: Test_net5_0_x64
     condition: and(succeeded(), ne(variables['RunTests'], 'false'))
     strategy:
       matrix:
@@ -83,27 +85,127 @@ stages:
           osName: 'macOS'
           imageName: 'macOS-10.14'
           maximumAllowedFailures: 0 # Maximum allowed failures for a successful build
-    displayName: 'Test netcoreapp2.1 on'
+    displayName: 'Test net5.0,x64 on'
     pool:
       vmImage: $(imageName)
     steps:
     - template: 'build/azure-templates/run-tests-on-os.yml'
       parameters:
         osName: $(osName)
-        testTargetFrameworks: 'netcoreapp2.1'
+        testTargetFrameworks: 'net5.0'
+        vsTestPlatform: 'x64'
         testResultsArtifactName: '$(TestResultsArtifactName)'
         maximumAllowedFailures: $(maximumAllowedFailures)
 
-  - job: Test_net451
+  - job: Test_net5_0_x86 # Only run if explicitly enabled with RunX86Tests
+    condition: and(succeeded(), ne(variables['RunTests'], 'false'), eq(variables['RunX86Tests'], 'true'))
+    strategy:
+      matrix:
+        Windows:
+          osName: 'Windows'
+          imageName: 'windows-2019'
+          maximumAllowedFailures: 0 # Maximum allowed failures for a successful build
+        Linux:
+          osName: 'Linux'
+          imageName: 'ubuntu-16.04'
+          maximumAllowedFailures: 0 # Maximum allowed failures for a successful build
+        macOS:
+          osName: 'macOS'
+          imageName: 'macOS-10.14'
+          maximumAllowedFailures: 0 # Maximum allowed failures for a successful build
+    displayName: 'Test net5.0,x86 on'
+    pool:
+      vmImage: $(imageName)
+    steps:
+    - template: 'build/azure-templates/run-tests-on-os.yml'
+      parameters:
+        osName: $(osName)
+        testTargetFrameworks: 'net5.0'
+        vsTestPlatform: 'x86'
+        testResultsArtifactName: '$(TestResultsArtifactName)'
+        maximumAllowedFailures: $(maximumAllowedFailures)
+
+  - job: Test_netcoreapp3_1_x64
     condition: and(succeeded(), ne(variables['RunTests'], 'false'))
-    displayName: 'Test net451 on Windows'
+    strategy:
+      matrix:
+        Windows:
+          osName: 'Windows'
+          imageName: 'windows-2019'
+          maximumAllowedFailures: 0 # Maximum allowed failures for a successful build
+        Linux:
+          osName: 'Linux'
+          imageName: 'ubuntu-16.04'
+          maximumAllowedFailures: 0 # Maximum allowed failures for a successful build
+        macOS:
+          osName: 'macOS'
+          imageName: 'macOS-10.14'
+          maximumAllowedFailures: 0 # Maximum allowed failures for a successful build
+    displayName: 'Test netcoreapp3.1,x64 on'
+    pool:
+      vmImage: $(imageName)
+    steps:
+    - template: 'build/azure-templates/run-tests-on-os.yml'
+      parameters:
+        osName: $(osName)
+        testTargetFrameworks: 'netcoreapp3.1'
+        vsTestPlatform: 'x64'
+        testResultsArtifactName: '$(TestResultsArtifactName)'
+        maximumAllowedFailures: $(maximumAllowedFailures)
+
+  - job: Test_netcoreapp3_1_x86 # Only run if explicitly enabled with RunX86Tests
+    condition: and(succeeded(), ne(variables['RunTests'], 'false'), eq(variables['RunX86Tests'], 'true'))
+    strategy:
+      matrix:
+        Windows:
+          osName: 'Windows'
+          imageName: 'windows-2019'
+          maximumAllowedFailures: 0 # Maximum allowed failures for a successful build
+        Linux:
+          osName: 'Linux'
+          imageName: 'ubuntu-16.04'
+          maximumAllowedFailures: 0 # Maximum allowed failures for a successful build
+        macOS:
+          osName: 'macOS'
+          imageName: 'macOS-10.14'
+          maximumAllowedFailures: 0 # Maximum allowed failures for a successful build
+    displayName: 'Test netcoreapp3.1,x86 on'
+    pool:
+      vmImage: $(imageName)
+    steps:
+    - template: 'build/azure-templates/run-tests-on-os.yml'
+      parameters:
+        osName: $(osName)
+        testTargetFrameworks: 'netcoreapp3.1'
+        vsTestPlatform: 'x86'
+        testResultsArtifactName: '$(TestResultsArtifactName)'
+        maximumAllowedFailures: $(maximumAllowedFailures)
+
+  - job: Test_net461_x64
+    condition: and(succeeded(), ne(variables['RunTests'], 'false'))
+    displayName: 'Test net461,x64 on Windows'
     pool:
       vmImage: 'windows-2019'
     steps:
     - template: 'build/azure-templates/run-tests-on-os.yml'
       parameters:
         osName: 'Windows'
-        testTargetFrameworks: 'net451'
+        testTargetFrameworks: 'net461'
+        vsTestPlatform: 'x64'
+        testResultsArtifactName: '$(TestResultsArtifactName)'
+        maximumAllowedFailures: 0 # Maximum allowed failures for a successful build
+
+  - job: Test_net461_x86 # Only run if explicitly enabled with RunX86Tests
+    condition: and(succeeded(), ne(variables['RunTests'], 'false'), eq(variables['RunX86Tests'], 'true'))
+    displayName: 'Test net461,x86 on Windows'
+    pool:
+      vmImage: 'windows-2019'
+    steps:
+    - template: 'build/azure-templates/run-tests-on-os.yml'
+      parameters:
+        osName: 'Windows'
+        testTargetFrameworks: 'net461'
+        vsTestPlatform: 'x86'
         testResultsArtifactName: '$(TestResultsArtifactName)'
         maximumAllowedFailures: 0 # Maximum allowed failures for a successful build
 
@@ -127,10 +229,10 @@ stages:
 
       # NOTE: We are setting Build.BuildNumber here to the NuGet package version to work around the limitation that
       # the version cannot be passed to the Index Sources & Publish Symbols task.
-    - powershell: |
+    - pwsh: |
         $version = Get-Content '$(Build.ArtifactStagingDirectory)/$(VersionArtifactName)/$(PackageVersionFileName)' -Raw
         Write-Host "##vso[task.setvariable variable=PackageVersion;]$version"
-        Write-Host "##vso[task.setvariable variable=Build.BuildNumber;]$version"
+        Write-Host "##vso[build.updatebuildnumber]$version"
       displayName: 'Read PackageVersion from File to Build.BuildNumber'
 
     - template: 'build/azure-templates/show-all-environment-variables.yml'
