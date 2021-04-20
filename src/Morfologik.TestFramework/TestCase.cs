@@ -1,5 +1,5 @@
-﻿using Morfologik.TestFramework.RandomizedTesting.Generators;
-using NUnit.Framework;
+﻿using NUnit.Framework;
+using RandomizedTesting.Generators;
 using System;
 using System.Collections;
 using System.Collections.Generic;
