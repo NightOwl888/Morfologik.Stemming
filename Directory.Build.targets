@@ -1,8 +1,4 @@
 ﻿<Project>
-  <PropertyGroup>
-    <NoWarn>$(NoWarn);1591</NoWarn>
-  </PropertyGroup>
-
   <!-- Features in .NET Standard and .NET Core only (no .NET Framework support) -->
   <PropertyGroup Condition=" $(TargetFramework.StartsWith('netstandard')) Or $(TargetFramework.StartsWith('netcoreapp')) ">
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
