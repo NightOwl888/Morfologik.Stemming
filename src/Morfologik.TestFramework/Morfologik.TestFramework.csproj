@@ -11,6 +11,7 @@
   <ItemGroup>
     <PackageReference Include="J2N" Version="$(J2NPackageReferenceVersion)" />
     <PackageReference Include="NUnit" Version="$(NUnitPackageReferenceVersion)" />
+    <PackageReference Include="RandomizedTesting.Generators" Version="$(RandomizedTestingGeneratorsPackageReferenceVersion)" />
   </ItemGroup>
 
 </Project>

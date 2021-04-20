@@ -10,3 +10,9 @@ Tools for finite state atomata construction and dictionary-based morphological d
 Morphosyntactic dictionary for the Polish language.
 
 This is a C# port of the [Java morfologik-stemming](https://github.com/morfologik/morfologik-stemming) library. See the original project's wiki for [documentation and usage examples](https://github.com/morfologik/morfologik-stemming/wiki/Examples).
+
+## Giving Back
+
+If you find this library to be useful, please star us on GitHub and consider a sponsorship so we can continue bringing you great free tools like this one.
+
+[![GitHub Sponsors](https://img.shields.io/badge/-Sponsor-fafbfc?logo=GitHub%20Sponsors)](https://github.com/sponsors/NightOwl888)
