@@ -7,11 +7,8 @@
 
   <PropertyGroup Label="NuGet Package Settings">
     <AssemblyTitle>Mofologik.Polish</AssemblyTitle>
-    <Description>
-      Morfologik Stemming (Polish Dictionary). Morfologik is a project aiming at generating Polish morphosyntactic
-      dictionaries (hence the name) used for part-of-speech tagging and
-      part-of-speech synthesis.
-    </Description>
+    <Description>Morfologik Stemming (Polish Dictionary). Morfologik is a project aiming at generating Polish morphosyntactic </Description>
+    <Description>$(Description)dictionaries (hence the name) used for part-of-speech tagging and part-of-speech synthesis.</Description>
     <PackageTags>$(PackageTags);polish;morphological;stemming;stemmer;dictionary</PackageTags>
   </PropertyGroup>
 
