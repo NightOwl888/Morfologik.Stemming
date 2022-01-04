@@ -3,10 +3,11 @@
     <IsPackable>true</IsPackable>
     <PackageTags>morfologik;nlp</PackageTags>
     <Authors>NightOwl888</Authors>
-    <RepositoryUrl>https://github.com/NightOwl888/Morfologik.Stemming/</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/NightOwl888/Morfologik.Stemming/</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/$(GitHubOrganization)/$(GitHubProject)/</PackageProjectUrl>
     <!--<PackageIconUrl></PackageIconUrl>-->
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <ReleaseNotesUrl Condition=" '$(PackageVersion)' != '' ">https://github.com/$(GitHubOrganization)/$(GitHubProject)/releases/tag/$(PackageVersion)</ReleaseNotesUrl>
+    <PackageReleaseNotes Condition=" '$(ReleaseNotesUrl)' != '' ">$(ReleaseNotesUrl)</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(SolutionDir)LICENSE.txt" Pack="true" PackagePath="LICENSE.txt"/>
