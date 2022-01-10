@@ -11,6 +11,10 @@ Morphosyntactic dictionary for the Polish language.
 
 This is a C# port of the [Java morfologik-stemming](https://github.com/morfologik/morfologik-stemming) library. See the original project's wiki for [documentation and usage examples](https://github.com/morfologik/morfologik-stemming/wiki/Examples).
 
+## Building and Testing
+
+To build the project from source, see the [Building and Testing documentation](https://github.com/NightOwl888/Morfologik.Stemming/blob/main/docs/building-and-testing.md).
+
 ## Saying Thanks
 
 If you find this library to be useful, please star us [on GitHub](https://github.com/NightOwl888/Morfologik.Stemming/) and consider a financial sponsorship so we can continue bringing you great free tools like this one.
