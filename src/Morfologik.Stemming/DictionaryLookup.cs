@@ -124,7 +124,7 @@ namespace Morfologik.Stemming
             int prefixBytes = sequenceEncoder.PrefixBytes;
 #pragma warning restore 612, 618
 
-            if (dictionaryMetadata.InputConversionPairs.Any())
+            if (dictionaryMetadata.InputConversionPairs.Count > 0)
             {
                 word = ApplyReplacements(word, dictionaryMetadata.InputConversionPairs);
             }

@@ -42,7 +42,7 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Inflected word form data.
         /// </summary>
-        private ICharSequence wordCharSequence;
+        private ICharSequence? wordCharSequence;
 
         /// <summary>
         /// Character sequence after converting <see cref="stemBuffer"/> using
@@ -57,7 +57,7 @@ namespace Morfologik.Stemming
         private CharBuffer tagCharSequence;
 
         /// <summary>Byte buffer holding the inflected word form data.</summary>
-        internal ByteBuffer wordBuffer;
+        internal ByteBuffer? wordBuffer;
 
         /// <summary>Byte buffer holding stem data.</summary>
         internal ByteBuffer stemBuffer;
@@ -101,7 +101,7 @@ namespace Morfologik.Stemming
         /// <param name="target">Target byte buffer to copy the stem buffer to or
         /// <c>null</c> if a new buffer should be allocated.</param>
         /// <returns>Returns <paramref name="target"/> or the new reallocated buffer.</returns>
-        public ByteBuffer GetStemBytes(ByteBuffer target)
+        public ByteBuffer GetStemBytes(ByteBuffer? target)
         {
             target = BufferUtils.ClearAndEnsureCapacity(target, stemBuffer.Remaining);
             stemBuffer.Mark();
@@ -121,7 +121,7 @@ namespace Morfologik.Stemming
         /// <param name="target">Target byte buffer to copy the tag buffer to or
         /// <c>null</c> if a new buffer should be allocated.</param>
         /// <returns>Returns <paramref name="target"/> or the new reallocated buffer.</returns>
-        public ByteBuffer GetTagBytes(ByteBuffer target)
+        public ByteBuffer GetTagBytes(ByteBuffer? target)
         {
             target = BufferUtils.ClearAndEnsureCapacity(target, tagBuffer.Remaining);
             tagBuffer.Mark();
@@ -142,8 +142,12 @@ namespace Morfologik.Stemming
         /// <param name="target">Target byte buffer to copy the word buffer to or
         /// <c>null</c> if a new buffer should be allocated.</param>
         /// <returns>Returns <paramref name="target"/> or the new reallocated buffer.</returns>
-        public ByteBuffer GetWordBytes(ByteBuffer target)
+        public ByteBuffer GetWordBytes(ByteBuffer? target)
         {
+            // .NET specific - throw sensible exception if wordBuffer is null
+            if (wordBuffer is null)
+                throw new InvalidOperationException("wordBuffer must be set prior to calling GetWordBytes(ByteBuffer)");
+
             target = BufferUtils.ClearAndEnsureCapacity(target, wordBuffer.Remaining);
             wordBuffer.Mark();
             target.Put(wordBuffer);
@@ -156,7 +160,7 @@ namespace Morfologik.Stemming
         /// Return tag data decoded to a character sequence or
         /// <c>null</c> if no associated tag data exists.
         /// </summary>
-        public ICharSequence GetTag()
+        public ICharSequence? GetTag()
         {
             //decoder.GetChars(tagBuffer, 0, tagBuffer.Length, tagCharSequence, 0);
             //return tagCharSequence.Length == 0 ? null : new string(tagCharSequence);
@@ -168,7 +172,7 @@ namespace Morfologik.Stemming
         /// Return stem data decoded to a character sequence or
         /// <c>null</c> if no associated stem data exists.
         /// </summary>
-        public ICharSequence GetStem()
+        public ICharSequence? GetStem()
         {
             //decoder.GetChars(stemBuffer, 0, stemBuffer.Length, stemCharSequence, 0);
             //return stemCharSequence.Length == 0 ? null : new string(stemCharSequence);
@@ -181,7 +185,7 @@ namespace Morfologik.Stemming
         /// Return inflected word form data. Usually the parameter passed to
         /// <see cref="DictionaryLookup.Lookup(ICharSequence)"/>.
         /// </summary>
-        public ICharSequence Word => wordCharSequence;
+        public ICharSequence? Word => wordCharSequence;
 
         /// <summary>
         /// 
@@ -225,8 +229,11 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Clone char sequences only if not immutable.
         /// </summary>
-        private ICharSequence CloneCharSequence(ICharSequence chs)
+        private ICharSequence CloneCharSequence(ICharSequence? chs)
         {
+            // .NET specific - if the source is null, return a null char sequence
+            if (chs is null)
+                return new StringCharSequence(null);
             if (chs is StringCharSequence)
                 return chs;
             return chs.ToString().AsCharSequence();

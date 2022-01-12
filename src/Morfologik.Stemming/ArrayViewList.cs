@@ -22,9 +22,11 @@ namespace Morfologik.Stemming
         /// <summary>
         /// 
         /// </summary>
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         internal ArrayViewList(T[] array, int start, int length)
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             Wrap(array, start, length);
         }
@@ -77,7 +79,7 @@ namespace Morfologik.Stemming
         /// </summary>
         public int IndexOf(object o)
         {
-            if (o == null)
+            if (o is null)
             {
                 for (int i = start; i < start + length; i++)
                     if (a[i] == null)
@@ -94,9 +96,18 @@ namespace Morfologik.Stemming
 
         public int IndexOf(T item)
         {
-            for (int i = start; i < start + length; i++)
-                if (item.Equals(a[i]))
-                    return i - start;
+            if (item is null)
+            {
+                for (int i = start; i < start + length; i++)
+                    if (a[i] == null)
+                        return i - start;
+            }
+            else
+            {
+                for (int i = start; i < start + length; i++)
+                    if (item.Equals(a[i]))
+                        return i - start;
+            }
             return -1;
         }
 

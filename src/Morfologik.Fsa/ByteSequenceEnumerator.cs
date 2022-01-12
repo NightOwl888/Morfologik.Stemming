@@ -21,7 +21,7 @@ namespace Morfologik.Fsa
         private readonly FSA fsa;
 
         /// <summary>An internal cache for the next element in the FSA</summary>
-        private ByteBuffer nextElement;
+        private ByteBuffer? nextElement;
 
         /// <summary>
         /// A buffer for the current sequence of bytes from the current node to the
@@ -38,17 +38,19 @@ namespace Morfologik.Fsa
         /// <summary>Current processing depth in <see cref="arcs"/>.</summary>
         private int position;
 
-        /// <summary>
-        /// Gets a <see cref="ByteBuffer"/> with the sequence corresponding to the
-        /// next final state in the automaton.
-        /// </summary>
-        public ByteBuffer Current { get; private set; }
+        private ByteBuffer? current;
 
         /// <summary>
         /// Gets a <see cref="ByteBuffer"/> with the sequence corresponding to the
         /// next final state in the automaton.
         /// </summary>
-        object IEnumerator.Current => Current;
+        public ByteBuffer Current => current!;
+
+        /// <summary>
+        /// Gets a <see cref="ByteBuffer"/> with the sequence corresponding to the
+        /// next final state in the automaton.
+        /// </summary>
+        object? IEnumerator.Current => current;
 
         /// <summary>
         /// Create an instance of the enumerator iterating over all automaton sequences.
@@ -84,7 +86,7 @@ namespace Morfologik.Fsa
             position = 0;
             bufferWrapper.Clear();
             nextElement = null;
-            Current = null;
+            current = null;
 
             PushNode(node);
             return this;
@@ -108,7 +110,7 @@ namespace Morfologik.Fsa
         /// next final state in the automaton.
         /// </summary>
         /// <returns></returns>
-        private ByteBuffer Next()
+        private ByteBuffer? Next()
         {
             if (nextElement != null)
             {
@@ -125,7 +127,7 @@ namespace Morfologik.Fsa
         /// <summary>
         /// Advances to the next available final state.
         /// </summary>
-        private ByteBuffer Advance()
+        private ByteBuffer? Advance()
         {
             if (position == 0)
             {
@@ -197,8 +199,8 @@ namespace Morfologik.Fsa
         {
             if (!HasNext())
                 return false;
-            Current = Next();
-            return Current != null;
+            current = Next();
+            return current != null;
         }
 
         /// <summary>
@@ -217,7 +219,7 @@ namespace Morfologik.Fsa
             position = 0;
             bufferWrapper.Clear();
             nextElement = null;
-            Current = null;
+            current = null!;
         }
     }
 }
