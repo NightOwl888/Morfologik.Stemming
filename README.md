@@ -11,6 +11,8 @@ Morphosyntactic dictionary for the Polish language.
 
 This is a C# port of the [Java morfologik-stemming](https://github.com/morfologik/morfologik-stemming) library. See the original project's wiki for [documentation and usage examples](https://github.com/morfologik/morfologik-stemming/wiki/Examples).
 
+> NOTE: This project contains only the libraries for FSA reading. We recommend using the CLI tools in Java for building the FSA files. This project is compatible with the FSA files produced in Java.
+
 ## Building and Testing
 
 To build the project from source, see the [Building and Testing documentation](https://github.com/NightOwl888/Morfologik.Stemming/blob/main/docs/building-and-testing.md).
