@@ -48,10 +48,10 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Encoding used for converting bytes to characters and vice versa.
         /// </summary>
-        private string encoding;
+        private readonly string encoding; // Morfologik.Stemming: Marked readonly
 
-        private Encoding charset;
-        private CultureInfo locale = CultureInfo.CurrentCulture;
+        private readonly Encoding charset; // Morfologik.Stemming: Marked readonly
+        private readonly CultureInfo locale = CultureInfo.CurrentCulture; // Morfologik.Stemming: Marked readonly
 
         /// <summary>
         /// Replacement pairs for non-obvious candidate search in a speller dictionary.
@@ -88,7 +88,7 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Sequence encoder.
         /// </summary>
-        private EncoderType encoderType;
+        private readonly EncoderType encoderType; // Morfologik.Stemming: Marked readonly
 
         /// <summary>
         /// Expected metadata file extension.
@@ -126,7 +126,9 @@ namespace Morfologik.Stemming
         /// </summary>
         /// <param name="attrs">A set of <see cref="DictionaryAttribute"/> keys and their associated values.</param>
         /// <seealso cref="DictionaryMetadataBuilder"/>
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public DictionaryMetadata(IDictionary<DictionaryAttribute, string> attrs)
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             this.boolAttributes = new Dictionary<DictionaryAttribute, bool>();
             this.attributes = new Dictionary<DictionaryAttribute, string>();
@@ -216,7 +218,7 @@ namespace Morfologik.Stemming
                 }
             }
 
-            if (requiredAttributes.Any())
+            if (requiredAttributes.Count > 0)
             {
                 throw new ArgumentException(string.Format(StringFormatter.CurrentCulture, "At least one the required attributes was not provided: {0}",
                     requiredAttributes));

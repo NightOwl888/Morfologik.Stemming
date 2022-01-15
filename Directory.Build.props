@@ -1,14 +1,14 @@
 <Project>
-  <Import Project="version.props" Condition="Exists('version.props')" />
-  <Import Project="build\dependencies.props" Condition="Exists('build\dependencies.props')" />
 
   <PropertyGroup>
     <RepositoryRoot>$(MSBuildThisFileDirectory)</RepositoryRoot>
     <LangVersion>8.0</LangVersion>
+    <GitHubOrganization>NightOwl888</GitHubOrganization>
+    <GitHubProject>Morfologik.Stemming</GitHubProject>
   </PropertyGroup>
   
   <PropertyGroup Label="Assembly Signing">
-    <AssemblyOriginatorKeyFile>$(RepositoryRoot)build/key.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(RepositoryRoot).build/key.snk</AssemblyOriginatorKeyFile>
     <PublicKey>00240000048000009400000006020000002400005253413100040000010001006d6ab496afffdb8fedf3bafa74e84cd227efbb26425d8af025a66e06b60a92c5e368ca1b040be29bb4a4c51f8af13a38eda2ef3744bdf572a0fd5dfbdf5115bf38c5f0e539023875ce17d5500ee4fdf0022ea3be7a16726f0975a89f52eede36092dddaa84f24ae0e3a0d07e6ab3a76f26fb082f076c042fc48176d40b8c5bce</PublicKey>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
@@ -26,7 +26,7 @@
   </PropertyGroup>
   
   <PropertyGroup Label="Copyright Info">
-    <Company>Morfologik</Company>
+    <Company>$(GitHubProject)</Company>
     <CurrentYear Condition=" '$(CurrentYear)' == '' ">$([System.DateTime]::UtcNow.Year.ToString())</CurrentYear>
     <BeginCopyrightYear>2019</BeginCopyrightYear>
     <CopyrightYearRange>$(BeginCopyrightYear) - $(CurrentYear)</CopyrightYearRange>
@@ -34,10 +34,13 @@
     <Copyright>Copyright © $(CopyrightYearRange) $(Company)</Copyright>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Nerdbank.GitVersioning">
-      <Version>$(NerdBankGitVersioningPackageReferenceVersion)</Version>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-  </ItemGroup>
+  <PropertyGroup Label="SourceLink Settings: https://github.com/dotnet/sourcelink/blob/main/README.md">
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(BUILD_REPOSITORY_PROVIDER)' == 'GitHub' Or '$(BUILD_REPOSITORY_PROVIDER)' == 'TfsGit' " Label="Deterministic builds: https://github.com/clairernovotny/DeterministicBuilds#readme">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
 </Project>

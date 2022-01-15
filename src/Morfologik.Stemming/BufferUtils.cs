@@ -17,9 +17,9 @@ namespace Morfologik.Stemming
         /// <param name="buffer">The buffer to check or <c>null</c> if a new buffer should be allocated.</param>
         /// <param name="elements">The required number of elements to be appended to the buffer.</param>
         /// <returns>Returns the same buffer or a new buffer with the given capacity.</returns>
-        public static ByteBuffer ClearAndEnsureCapacity(ByteBuffer buffer, int elements)
+        public static ByteBuffer ClearAndEnsureCapacity(ByteBuffer? buffer, int elements)
         {
-            if (buffer == null || buffer.Capacity < elements)
+            if (buffer is null || buffer.Capacity < elements)
             {
                 buffer = ByteBuffer.Allocate(elements);
             }

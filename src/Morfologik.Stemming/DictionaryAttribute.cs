@@ -366,7 +366,7 @@ namespace Morfologik.Stemming
             fromString: (string propertyName, string value) =>
             {
                 var conversionPairs = new JCG.LinkedDictionary<string, string>();
-                string[] replacements = PairSplit.Split(value);
+                string[] replacements = PairSplit!.Split(value);
                 foreach (var stringPair in replacements)
                 {
                     var twoStrings = stringPair.Trim().Split(' ');
@@ -396,7 +396,7 @@ namespace Morfologik.Stemming
             fromString: (string propertyName, string value) =>
             {
                 var conversionPairs = new JCG.LinkedDictionary<string, string>();
-                string[] replacements = PairSplit.Split(value);
+                string[] replacements = PairSplit!.Split(value);
                 foreach (var stringPair in replacements)
                 {
                     var twoStrings = stringPair.Trim().Split(' ');
@@ -426,7 +426,7 @@ namespace Morfologik.Stemming
             fromString: (string propertyName, string value) =>
             {
                 var replacementPairs = new JCG.LinkedDictionary<string, IList<string>>();
-                string[] replacements = PairSplit.Split(value);
+                string[] replacements = PairSplit!.Split(value);
                 foreach (var stringPair in replacements)
                 {
                     var twoStrings = stringPair.Trim().Split(' ');
@@ -456,7 +456,7 @@ namespace Morfologik.Stemming
             fromString: (string propertyName, string value) =>
             {
                 var equivalentCharacters = new Dictionary<char, IList<char>>();
-                string[] eqChars = PairSplit.Split(value);
+                string[] eqChars = PairSplit!.Split(value);
                 foreach (var characterPair in eqChars)
                 {
                     var twoChars = characterPair.Trim().Split(' ');
@@ -523,7 +523,7 @@ namespace Morfologik.Stemming
     /// <typeparam name="TValue">The type of return (T)value of <see cref="FromString(string)"/>.</typeparam>
     public class DictionaryAttribute<TValue>
     {
-        private readonly Func<string, string, TValue> fromString = null;
+        private readonly Func<string, string, TValue>? fromString = null;
 
         /// <summary>
         /// Public instance constructor.

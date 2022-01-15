@@ -6,11 +6,8 @@
 
   <PropertyGroup Label="NuGet Package Settings">
     <AssemblyTitle>Mofologik.Fsa</AssemblyTitle>
-    <Description>
-      Morfologik Finite State Automata Traversal. Morfologik is a project aiming at generating Polish morphosyntactic
-      dictionaries (hence the name) used for part-of-speech tagging and
-      part-of-speech synthesis.
-    </Description>
+    <Description>Morfologik Finite State Automata Traversal. Morfologik is a project aiming at generating Polish morphosyntactic </Description>
+    <Description>$(Description)dictionaries (hence the name) used for part-of-speech tagging and part-of-speech synthesis.</Description>
     <PackageTags>$(PackageTags);fsa;finite;state;automata;automaton;traversal</PackageTags>
   </PropertyGroup>
 

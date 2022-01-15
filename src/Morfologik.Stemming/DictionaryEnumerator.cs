@@ -24,7 +24,7 @@ namespace Morfologik.Stemming
         private ByteBuffer temp = ByteBuffer.Allocate(0);
         private readonly ISequenceEncoder sequenceEncoder;
 
-        private WordData current;
+        private WordData? current;
 
         /// <summary>
         /// Initializes a new instance of <see cref="DictionaryEnumerator"/>.

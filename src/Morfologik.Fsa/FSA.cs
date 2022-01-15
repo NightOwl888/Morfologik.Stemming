@@ -383,11 +383,11 @@ namespace Morfologik.Fsa
         /// </exception>
         public static T Read<T>(Stream stream) where T : FSA
         {
-            var fsa = Read(stream) as T;
-            if (fsa == null)
+            FSA fsa = Read(stream);
+            if (!(fsa is T result))
                 throw new IOException(string.Format(CultureInfo.InvariantCulture, "Expected FSA type {0}, but read an incompatible type {0}.",
-                    typeof(T).Name, fsa.GetType().Name));
-            return fsa;
+                    typeof(T).Name, fsa?.GetType().Name ?? "null"));
+            return result;
         }
     }
 }
