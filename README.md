@@ -2,7 +2,7 @@ Morfologik
 =========
 
 [![Nuget](https://img.shields.io/nuget/dt/Morfologik.Stemming)](https://www.nuget.org/packages/Morfologik.Stemming)
-[![Azure DevOps builds (branch)](https://img.shields.io/azure-devops/build/NightOwl888/Morfologik.Stemming/2/release/v2.1.7)](https://dev.azure.com/NightOwl888/Morfologik.Stemming/_build?definitionId=2)
+[![Azure DevOps builds (branch)](https://img.shields.io/azure-devops/build/NightOwl888/Morfologik.Stemming/2/main)](https://dev.azure.com/NightOwl888/Morfologik.Stemming/_build?definitionId=2)
 [![GitHub](https://img.shields.io/github/license/NightOwl888/Morfologik.Stemming)](https://github.com/NightOwl888/Morfologik.Stemming/blob/main/LICENSE.txt)
 
 Tools for finite state atomata construction and dictionary-based morphological dictionaries.
