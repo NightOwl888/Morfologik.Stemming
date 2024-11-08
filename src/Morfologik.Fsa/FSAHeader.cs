@@ -1,5 +1,4 @@
-﻿using J2N.Numerics;
-using System.IO;
+﻿using System.IO;
 
 namespace Morfologik.Fsa
 {
@@ -39,9 +38,9 @@ namespace Morfologik.Fsa
         /// <exception cref="IOException">If the stream ends prematurely or if it contains invalid data.</exception>
         public static FSAHeader Read(Stream input)
         {
-            if (input.ReadByte() != ((FsaMagic.TripleShift(24))) ||
-                input.ReadByte() != ((FsaMagic.TripleShift(16)) & 0xff) ||
-                input.ReadByte() != ((FsaMagic.TripleShift(8)) & 0xff) ||
+            if (input.ReadByte() != ((FsaMagic >>> 24)) ||
+                input.ReadByte() != ((FsaMagic >>> 16) & 0xff) ||
+                input.ReadByte() != ((FsaMagic >>> 8) & 0xff) ||
                 input.ReadByte() != ((FsaMagic) & 0xff))
             {
                 throw new IOException("Invalid file header, probably not an FSA.");

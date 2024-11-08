@@ -1,5 +1,4 @@
 ﻿using J2N.IO;
-using J2N.Numerics;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -151,7 +150,7 @@ namespace Morfologik.Fsa
                 flags |= FSAFlags.Numbers;
             }
 
-            this.NodeDataLength = (hgtl.TripleShift(4)) & 0x0f;
+            this.NodeDataLength = (hgtl >>> 4) & 0x0f;
             this.GoToLength = hgtl & 0x0f;
 
             Arcs = ReadRemaining(input);
@@ -352,7 +351,7 @@ namespace Morfologik.Fsa
                  * The destination node address has to be extracted from the arc's
                  * goto field.
                  */
-                return DecodeFromBytes(Arcs, arc + AddressOffset, GoToLength).TripleShift(3);
+                return DecodeFromBytes(Arcs, arc + AddressOffset, GoToLength) >>> 3;
             }
         }
 

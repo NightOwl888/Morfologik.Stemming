@@ -1,5 +1,4 @@
 ﻿using J2N.IO;
-using J2N.Numerics;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -181,7 +180,7 @@ namespace Morfologik.Fsa
                 flags = FSAFlags.Flexible | FSAFlags.StopBit | FSAFlags.NextBit;
                 if ((hgtl & 0xf0) != 0)
                 {
-                    this.NodeDataLength = (hgtl.TripleShift(4)) & 0x0f;
+                    this.NodeDataLength = (hgtl >>> 4) & 0x0f;
                     this.GoToLength = hgtl & 0x0f;
                     flags |= FSAFlags.Numbers;
                 }
@@ -300,7 +299,7 @@ namespace Morfologik.Fsa
         {
             if (IsNextSet(arc) && IsLabelCompressed(arc))
             {
-                return this.LabelMapping[(Arcs[arc].TripleShift(3)) & 0x1f];
+                return this.LabelMapping[(Arcs[arc] >>> 3) & 0x1f];
             }
             else
             {
@@ -424,7 +423,7 @@ namespace Morfologik.Fsa
                     r = r << 8 | (Arcs[arc + 1 + i] & 0xff);
                 }
                 r = r << 8 | (Arcs[arc] & 0xff);
-                return r.TripleShift(3);
+                return r >>> 3;
             }
         }
 
