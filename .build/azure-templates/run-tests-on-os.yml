@@ -4,7 +4,7 @@
 
 parameters:
   osName: 'Windows' # The name of the operating system for display purposes.
-  testTargetFrameworks: '' # A semicolon separated list of target frameworks indicating which frameworks tests will be run on. See: https://docs.microsoft.com/en-us/dotnet/standard/frameworks.
+  testTargetFramework: '' # A target framework indicating which framework tests will be run on. See: https://docs.microsoft.com/en-us/dotnet/standard/frameworks.
   binaryArtifactName: 'testbinaries' # The name of the Azure DevOps build artifact where the test assemblies will be downloaded from. Default 'testbinaries'.
   testResultsArtifactName: 'testresults' # The name of the Azure DevOps build artifact where the test results will be published. Default 'testresults'.
   vsTestPlatform: 'x64' # Target platform architecture used for test execution. Valid values are x86, x64, and ARM.
@@ -23,7 +23,7 @@ steps:
         }
     }
     EnsureNotNullOrEmpty('${{ parameters.osName }}', 'osName')
-    EnsureNotNullOrEmpty('${{ parameters.testTargetFrameworks }}', 'testTargetFrameworks')
+    EnsureNotNullOrEmpty('${{ parameters.testTargetFramework }}', 'testTargetFramework')
     EnsureNotNullOrEmpty('${{ parameters.binaryArtifactName }}', 'binaryArtifactName')
     EnsureNotNullOrEmpty('${{ parameters.testResultsArtifactName }}', 'testResultsArtifactName')
     EnsureNotNullOrEmpty('${{ parameters.vsTestPlatform }}', 'vsTestPlatform')
@@ -32,38 +32,111 @@ steps:
     EnsureNotNullOrEmpty('${{ parameters.maximumParallelJobs }}', 'maximumParallelJobs')
     EnsureNotNullOrEmpty('${{ parameters.dotNetSdkVersion }}', 'dotNetSdkVersion')
   displayName: 'Validate Template Parameters'
-
-- template: 'install-dotnet-sdk.yml'
-  parameters:
-    sdkVersion: '${{ parameters.dotNetSdkVersion }}'
-
-- task: UseDotNet@2
-  displayName: 'Use .NET Core sdk 3.1.416'
-  inputs:
-    version: 3.1.416
-  condition: and(succeeded(), contains('${{ parameters.testTargetFrameworks }}', 'netcoreapp3.'))
-
-- task: UseDotNet@2
-  displayName: 'Use .NET sdk 5.0.404'
-  inputs:
-    version: 5.0.404
-  condition: and(succeeded(), contains('${{ parameters.testTargetFrameworks }}', 'net5.'))
-
-- task: DownloadBuildArtifacts@0
-  displayName: 'Download Build Artifacts: ${{ parameters.binaryArtifactName }}'
-  inputs:
-    artifactName: ${{ parameters.binaryArtifactName }}
-    downloadPath: '$(System.DefaultWorkingDirectory)'
+  condition: eq(variables['System.Debug'], 'true')
 
 - pwsh: |
-    $testTargetFrameworksString = '${{ parameters.testTargetFrameworks }}'
+    $testTargetFramework = '${{ parameters.testTargetFramework }}'
+    $testPlatform = '${{ parameters.vsTestPlatform }}'
+    $dotnetSdkVersion = '${{ parameters.dotNetSdkVersion }}'
+    if ($IsWindows -eq $null) {
+        $IsWindows = $env:OS.StartsWith('Win')
+    }
+    # .NET Framework tests are SLOW when using the .NET 8 SDK (especially those for net47 targeting net40).
+    # So, we use .NET 6 SDK instead.
+    if ($testTargetFramework.StartsWith('net4')) {
+        $dotnetSdkVersion = '6.0.421'
+    }
+    Write-Host "Using SDK Version: $dotnetSdkVersion"
+    $performMulitLevelLookup = if ($IsWindows -and $testPlatform.Equals('x86')) { 'true' } else { 'false' }
+    Write-Host "##vso[task.setvariable variable=PerformMultiLevelLookup;]$performMulitLevelLookup"
+    Write-Host "##vso[task.setvariable variable=DotNetSdkVersion;]$dotnetSdkVersion"
+#- template: 'show-all-environment-variables.yml' # Uncomment for debugging
+- template: 'install-dotnet-sdk.yml'
+  parameters:
+    sdkVersion: '$(DotNetSdkVersion)'
+    performMultiLevelLookup: '$(PerformMultiLevelLookup)'
+
+    # Hack: .NET 8+ no longer installs the x86 bits and they must be installed separately. However, it is not
+    # trivial to get it into the path and to get it to pass the minimum SDK version check in runbuild.ps1.
+    # So, we install it afterward and set the environment variable so the above SDK can delegate to it.
+    # This code only works on Windows.
+- pwsh: |
+    $sdkVersion = '$(DotNetSdkVersion)'
+    $architecture = '${{ parameters.vsTestPlatform }}'
+    $installScriptPath = "${env:AGENT_TEMPDIRECTORY}/dotnet-install.ps1"
+    $installScriptUrl = "https://raw.githubusercontent.com/dotnet/install-scripts/main/src/dotnet-install.ps1"
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Invoke-WebRequest $installScriptUrl -OutFile $installScriptPath -TimeoutSec 60
+    $installPath = "${env:ProgramFiles(x86)}/dotnet"
+    & $installScriptPath -Version $sdkVersion -Architecture $architecture -InstallDir $installPath
+    Write-Host "##vso[task.setvariable variable=DOTNET_ROOT_X86;]$installPath"
+  displayName: 'Use .NET SDK $(DotNetSdkVersion) (x86)'
+  condition: and(succeeded(), contains('${{ parameters.testTargetFramework }}', 'net9.'), eq('${{ parameters.vsTestPlatform }}', 'x86'))
+  
+- task: UseDotNet@2
+  displayName: 'Use .NET SDK 8.0.404'
+  inputs:
+    packageType: 'sdk'
+    version: '8.0.404'
+    performMultiLevelLookup: '${{ variables.PerformMultiLevelLookup }}'
+  condition: and(succeeded(), contains('${{ parameters.testTargetFramework }}', 'net8.'))
+
+    # Hack: .NET 8+ no longer installs the x86 bits and they must be installed separately. However, it is not
+    # trivial to get it into the path and to get it to pass the minimum SDK version check in runbuild.ps1.
+    # So, we install it afterward and set the environment variable so the above SDK can delegate to it.
+    # This code only works on Windows.
+- pwsh: |
+    $sdkVersion = '8.0.404'
+    $architecture = '${{ parameters.vsTestPlatform }}'
+    $installScriptPath = "${env:AGENT_TEMPDIRECTORY}/dotnet-install.ps1"
+    $installScriptUrl = "https://raw.githubusercontent.com/dotnet/install-scripts/main/src/dotnet-install.ps1"
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Invoke-WebRequest $installScriptUrl -OutFile $installScriptPath -TimeoutSec 60
+    $installPath = "${env:ProgramFiles(x86)}/dotnet"
+    & $installScriptPath -Version $sdkVersion -Architecture $architecture -InstallDir $installPath
+    Write-Host "##vso[task.setvariable variable=DOTNET_ROOT_X86;]$installPath"
+  displayName: 'Use .NET SDK 8.0.404 (x86)'
+  condition: and(succeeded(), contains('${{ parameters.testTargetFramework }}', 'net8.'), eq('${{ parameters.vsTestPlatform }}', 'x86'))
+  
+- task: UseDotNet@2
+  displayName: 'Use .NET SDK 6.0.428'
+  inputs:
+    packageType: 'sdk'
+    version: '6.0.428'
+    performMultiLevelLookup: '${{ variables.PerformMultiLevelLookup }}'
+  condition: and(succeeded(), contains('${{ parameters.testTargetFramework }}', 'net6.'))
+
+    # Hack: .NET 8+ no longer installs the x86 bits and they must be installed separately. However, it is not
+    # trivial to get it into the path and to get it to pass the minimum SDK version check in runbuild.ps1.
+    # So, we install it afterward and set the environment variable so the above SDK can delegate to it.
+    # This code only works on Windows.
+- pwsh: |
+    $sdkVersion = '6.0.428'
+    $architecture = '${{ parameters.vsTestPlatform }}'
+    $installScriptPath = "${env:AGENT_TEMPDIRECTORY}/dotnet-install.ps1"
+    $installScriptUrl = "https://raw.githubusercontent.com/dotnet/install-scripts/main/src/dotnet-install.ps1"
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Invoke-WebRequest $installScriptUrl -OutFile $installScriptPath -TimeoutSec 60
+    $installPath = "${env:ProgramFiles(x86)}/dotnet"
+    & $installScriptPath -Version $sdkVersion -Architecture $architecture -InstallDir $installPath
+    Write-Host "##vso[task.setvariable variable=DOTNET_ROOT_X86;]$installPath"
+  displayName: 'Use .NET SDK 6.0.428 (x86)'
+  condition: and(succeeded(), contains('${{ parameters.testTargetFramework }}', 'net6.'), eq('${{ parameters.vsTestPlatform }}', 'x86'))
+  
+- task: DownloadPipelineArtifact@2
+  displayName: 'Download Pipeline Artifacts: ${{ parameters.binaryArtifactName }}'
+  inputs:
+    artifactName: ${{ parameters.binaryArtifactName }}
+    targetPath: '$(System.DefaultWorkingDirectory)'
+
+- pwsh: |
+    $framework = '${{ parameters.testTargetFramework }}'
     $testBinaryRootDirectory = "$(System.DefaultWorkingDirectory)"
     $testResultsArtifactDirectory = "${{ format('$(Build.ArtifactStagingDirectory)/{0}',parameters.testResultsArtifactName) }}"
     $testPlatform = '${{ parameters.vsTestPlatform }}'
     $testOSName = '${{ parameters.osName }}'
     $testBinaryFilesPattern = '${{ parameters.testBinaryFilesPattern }}'
     $maximumParalellJobs = '${{ parameters.maximumParallelJobs }}'
-    $testTargetFrameworks = $testTargetFrameworksString.Split([char]',',[char]';')
     
     function IsSupportedFramework([string]$framework) {
         if ($IsWindows -eq $null) {
@@ -76,20 +149,22 @@ steps:
     }
     
     function RunTests([string]$framework, [string]$fileRegexPattern) {
-        if (!(IsSupportedFramework($framework))) { continue }
+        if (!(IsSupportedFramework($framework))) { return }
     
         $testBinaries = Get-ChildItem -Path "$testBinaryRootDirectory" -File -Recurse | Where-Object {$_.FullName -match "$framework"} | Where-Object {$_.FullName -match "$fileRegexPattern"} | Select -ExpandProperty FullName
         foreach ($testBinary in $testBinaries) {
             $testName = [System.IO.Path]::GetFileNameWithoutExtension($testBinary)
     
-            # Pause if we have queued too many parallel jobs
-            #$running = @(Get-Job | Where-Object { $_.State -eq 'Running' })
-            #if ($running.Count -ge $maximumParalellJobs) {
-            #    Write-Host ""
-            #    Write-Host "  Running tests in parallel on $($running.Count) projects." -ForegroundColor Cyan
-            #    Write-Host "  Next in queue is $projectName on $framework. This will take a bit, please wait..." -ForegroundColor Cyan
-            #    $running | Wait-Job -Any | Out-Null
-            #}
+            if ($maximumParalellJobs -gt 1) {
+            	# Pause if we have queued too many parallel jobs
+                $running = @(Get-Job | Where-Object { $_.State -eq 'Running' })
+                if ($running.Count -ge $maximumParalellJobs) {
+                    Write-Host ""
+                    Write-Host "  Running tests in parallel on $($running.Count) projects." -ForegroundColor Cyan
+                    Write-Host "  Next in queue is $testName on $framework. This will take a bit, please wait..." -ForegroundColor Cyan
+                    $running | Wait-Job -Any | Out-Null
+                }
+            }
               
             $testResultDirectory = "$testResultsArtifactDirectory/$testOSName/$framework/$testPlatform/$testName"
             if (!(Test-Path "$testResultDirectory")) {
@@ -97,37 +172,45 @@ steps:
             }
     
             Write-Host "Testing '$testBinary' on framework '$framework' and outputting test results to '$testResultDirectory/${{ parameters.testResultsFileName }}'..."
-            dotnet test "$testBinary" --framework "$framework" --blame --no-build --no-restore --logger:"console;verbosity=normal" --logger:"trx;LogFileName=${{ parameters.testResultsFileName }}" --results-directory:"$testResultDirectory" --blame-hang-timeout 10minutes --blame-hang-dump-type mini -- RunConfiguration.TargetPlatform=$testPlatform
+            if ($maximumParalellJobs -le 1) {
+            	dotnet test "$testBinary" --framework "$framework" --blame --no-build --no-restore --logger:"console;verbosity=normal" --logger:"trx;LogFileName=${{ parameters.testResultsFileName }}" --results-directory:"$testResultDirectory" --blame-hang-timeout 10minutes --blame-hang-dump-type mini -- RunConfiguration.TargetPlatform=$testPlatform
+            } else {
     
-
-            $testExpression = "$testExpression -- RunConfiguration.TargetPlatform=$testPlatform"
-
-            #$scriptBlock = {
-            #    param([string]$testBinary, [string]$fwork, [string]$testPlatform, [string]$testResultDirectory)
-            #    dotnet test "$testBinary" --framework "$framework" --blame --no-build --no-restore --logger:"console;verbosity=normal" --logger:"trx;LogFileName=${{ parameters.testResultsFileName }}" --results-directory:"$testResultDirectory" --blame-hang-timeout 10minutes --blame-hang-dump-type mini -- RunConfiguration.TargetPlatform=$testPlatform > "$testResultDirectory/dotnet-vstest.log" 2> "$testResultDirectory/dotnet-vstest-error.log"
-            #}
+                $scriptBlock = {
+                    param([string]$testName, [string]$testBinary, [string]$framework, [string]$testPlatform, [string]$testResultDirectory)
+                    dotnet test "$testBinary" --framework "$framework" --blame --no-build --no-restore --logger:"console;verbosity=normal" --logger:"trx;LogFileName=${{ parameters.testResultsFileName }}" --results-directory:"$testResultDirectory" --blame-hang-timeout 10minutes --blame-hang-dump-type mini -- RunConfiguration.TargetPlatform=$testPlatform > "$testResultDirectory/dotnet-vstest.log" 2> "$testResultDirectory/dotnet-vstest-error.log"
+                }
     
+                # Avoid dotnet test collisions by delaying for 500ms
+                Start-Sleep -Milliseconds 500
             # Execute the jobs in parallel
-            #Start-Job $scriptBlock -ArgumentList $testBinary,$fwork,$testPlatform,$testResultDirectory
+                Start-Job -Name "$testName,$framework,$testPlatform" -ScriptBlock $scriptBlock -ArgumentList $testName,$testBinary,$framework,$testPlatform,$testResultDirectory
+            }
         }
     }
     
-    foreach ($framework in $testTargetFrameworks) {
-        RunTests -Framework "$framework" -FileRegexPattern "$testBinaryFilesPattern"
+    RunTests -Framework "$framework" -FileRegexPattern "$testBinaryFilesPattern"
+    
+    if ($maximumParalellJobs -gt 1) {
+    	# Wait for it all to complete
+        do {
+            $running = @(Get-Job | Where-Object { $_.State -eq 'Running' })
+            if ($running.Count -gt 0) {
+                Write-Host ""
+                Write-Host "  Almost finished, only $($running.Count) projects left..." -ForegroundColor Cyan
+                [int]$number = 0
+                foreach ($runningJob in $running) {
+                    $number++
+                    $jobName = $runningJob | Select -ExpandProperty Name
+                    Write-Host "$number. $jobName"
+                }
+                $running | Wait-Job -Any
+            }
+        } until ($running.Count -eq 0)
     }
     
-    # Wait for it all to complete
-    #do {
-    #    $running = @(Get-Job | Where-Object { $_.State -eq 'Running' })
-    #    if ($running.Count -gt 0) {
-    #        Write-Host ""
-    #        Write-Host "  Almost finished, only $($running.Count) projects left..." -ForegroundColor Cyan
-    #        $running | Wait-Job -Any
-    #    }
-    #} until ($running.Count -eq 0)
-    
     $global:LASTEXITCODE = 0 # Force the script to continue on error
-  displayName: 'dotnet test ${{ parameters.testTargetFrameworks }}'
+  displayName: 'dotnet test ${{ parameters.testTargetFramework }}'
   ignoreLASTEXITCODE: true
 
 #- template: 'show-all-files.yml' # Uncomment for debugging
@@ -149,7 +232,7 @@ steps:
 - template: 'publish-test-results-for-test-projects.yml'
   parameters:
     osName: '${{ parameters.osName }}'
-    framework: '${{ parameters.framework }}'
+    framework: '${{ parameters.testTargetFramework }}'
     testPlatform: '${{ parameters.vsTestPlatform }}'
 
 - pwsh: |

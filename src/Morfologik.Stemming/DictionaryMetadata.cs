@@ -98,7 +98,7 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Gets all metadata attributes.
         /// </summary>
-        public IDictionary<DictionaryAttribute, string> Attributes => attributes.AsReadOnly();
+        public IDictionary<DictionaryAttribute, string> Attributes => JCG.Extensions.DictionaryExtensions.AsReadOnly(attributes);
 
         // Cached attrs.
         public string Encoding => encoding;
