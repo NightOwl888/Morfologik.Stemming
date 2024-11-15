@@ -1,4 +1,5 @@
 ﻿using Morfologik.Fsa;
+using Morfologik.Fsa.Support;
 using System;
 using System.IO;
 using System.Net;
@@ -42,6 +43,7 @@ namespace Morfologik.Stemming
         {
             this.FSA = fsa;
             this.Metadata = metadata;
+            EncodingProviderInitializer.EnsureInitialized(); // Morfologik.Stemming specific - initialize encoding provider
         }
 
         /// <summary>

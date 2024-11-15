@@ -1,6 +1,7 @@
 ﻿using J2N;
 using J2N.Collections.Generic.Extensions;
 using J2N.Text;
+using Morfologik.Fsa.Support;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -130,6 +131,8 @@ namespace Morfologik.Stemming
         public DictionaryMetadata(IDictionary<DictionaryAttribute, string> attrs)
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
+            EncodingProviderInitializer.EnsureInitialized(); // Morfologik.Stemming specific - initialize encoding provider
+
             this.boolAttributes = new Dictionary<DictionaryAttribute, bool>();
             this.attributes = new Dictionary<DictionaryAttribute, string>();
             IDictionary<DictionaryAttribute, string> attributeMap = new Dictionary<DictionaryAttribute, string>(DefaultAttributes);
@@ -375,15 +378,6 @@ namespace Morfologik.Stemming
             }
 
             properties.SaveProperties(writer, "# " + GetType().Name);
-        }
-
-        static DictionaryMetadata()
-        {
-#if NETSTANDARD
-            // Support for iso-8859-1 encoding. See: https://docs.microsoft.com/en-us/dotnet/api/system.text.codepagesencodingprovider?view=netcore-2.0
-            var encodingProvider = CodePagesEncodingProvider.Instance;
-            System.Text.Encoding.RegisterProvider(encodingProvider);
-#endif
         }
     }
 }
