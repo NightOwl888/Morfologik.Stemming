@@ -17,6 +17,10 @@
     </ProjectReference>
   </ItemGroup>
 
+  <ItemGroup Condition=" $(TargetFramework.StartsWith('net4')) ">
+    <Reference Include="System.Net.Http"/>
+  </ItemGroup>
+
   <ItemGroup>
     <None Remove="escape-separator.info" />
     <None Remove="test-diacritics-utf8.dict" />
