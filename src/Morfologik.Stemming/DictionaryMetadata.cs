@@ -303,7 +303,7 @@ namespace Morfologik.Stemming
         /// <returns>Returns the expected path of a metadata file.</returns>
         public static string GetExpectedMetadataLocation(string dictionary)
         {
-            return Path.Combine(new FileInfo(dictionary).DirectoryName, GetExpectedMetadataFileName(dictionary));
+            return Path.Combine(Path.GetDirectoryName(Path.GetFullPath(dictionary)) ?? string.Empty, GetExpectedMetadataFileName(dictionary));
         }
 
         /// <summary>

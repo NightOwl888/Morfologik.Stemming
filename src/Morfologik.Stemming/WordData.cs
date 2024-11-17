@@ -190,7 +190,7 @@ namespace Morfologik.Stemming
         /// <summary>
         /// 
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             throw new NotSupportedException(CollectionsErrorMessage);
         }
