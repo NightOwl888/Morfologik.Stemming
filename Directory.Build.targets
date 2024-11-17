@@ -1,6 +1,10 @@
 ﻿<Project>
 
   <Import Project="$(RepositoryRoot).build/dependencies.props" Condition="Exists('$(RepositoryRoot).build/dependencies.props')" />
+
+  <PropertyGroup Label="Solution-level Publish to Project-specific Directory">
+    <PublishDir Condition="'$(AlternatePublishRootDirectory)' != ''">$(AlternatePublishRootDirectory)/$(TargetFramework)/$(MSBuildProjectName)/</PublishDir>
+  </PropertyGroup>
   
   <!-- Features in .NET Standard, .NET Core, .NET 5.x, .NET 6.x, .NET 8.x, and .NET 9.x only (no .NET Framework support) -->
   <PropertyGroup Condition=" $(TargetFramework.StartsWith('netstandard')) Or $(TargetFramework.StartsWith('netcoreapp')) Or $(TargetFramework.StartsWith('net5.')) Or $(TargetFramework.StartsWith('net6.')) Or $(TargetFramework.StartsWith('net8.')) Or $(TargetFramework.StartsWith('net9.')) ">
