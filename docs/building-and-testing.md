@@ -4,7 +4,7 @@
 
 ### Prerequisites
 
-- [PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell) 3.0 or higher (see [this question](http://stackoverflow.com/questions/1825585/determine-installed-powershell-version) to check your PowerShell version)
+- [PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell) 6.0 or higher (see [this question](http://stackoverflow.com/questions/1825585/determine-installed-powershell-version) to check your PowerShell version)
 - [.NET 6 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 
 ### Execution
