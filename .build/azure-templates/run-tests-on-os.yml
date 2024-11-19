@@ -183,7 +183,8 @@ steps:
     
                 # Avoid dotnet test collisions by delaying for 500ms
                 Start-Sleep -Milliseconds 500
-            # Execute the jobs in parallel
+
+                # Execute the jobs in parallel
                 Start-Job -Name "$testName,$framework,$testPlatform" -ScriptBlock $scriptBlock -ArgumentList $testName,$testBinary,$framework,$testPlatform,$testResultDirectory
             }
         }
