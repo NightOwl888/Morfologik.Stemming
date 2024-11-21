@@ -5,8 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Morfologik.Polish\Morfologik.Polish.csproj" />
-    <ProjectReference Include="..\..\src\Morfologik.TestFramework\Morfologik.TestFramework.csproj" />
+    <ProjectReference Include="..\..\src\Morfologik.Polish\Morfologik.Polish.csproj">
+      <SetTargetFramework>$(SetTargetFramework)</SetTargetFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\Morfologik.TestFramework\Morfologik.TestFramework.csproj">
+      <SetTargetFramework>$(SetTargetFramework)</SetTargetFramework>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>

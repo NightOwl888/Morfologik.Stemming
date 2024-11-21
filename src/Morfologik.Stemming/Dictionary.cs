@@ -1,7 +1,9 @@
 ﻿using Morfologik.Fsa;
+using Morfologik.Stemming.Support;
 using System;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 
 namespace Morfologik.Stemming
 {
@@ -44,6 +46,11 @@ namespace Morfologik.Stemming
             this.Metadata = metadata;
         }
 
+        static Dictionary()
+        {
+            EncodingProviderInitializer.EnsureInitialized(); // Morfologik.Stemming specific - initialize encoding provider
+        }
+
         /// <summary>
         /// Attempts to load a dictionary using the path to the FSA file and the
         /// expected metadata extension.
@@ -80,14 +87,18 @@ namespace Morfologik.Stemming
                 throw new IOException("Couldn't construct relative feature map URL for: " + dictURL, e);
             }
 
-            var fsaRequest = (HttpWebRequest)WebRequest.Create(dictURL);
-            var expectedMetadataRequest = (HttpWebRequest)WebRequest.Create(expectedMetadataURL);
+            try
+            {
+                using var httpClient = new HttpClient();
+                using var fsaStream = httpClient.GetStreamAsync(dictURL).GetAwaiter().GetResult();
+                using var metadataStream = httpClient.GetStreamAsync(expectedMetadataURL).GetAwaiter().GetResult();
 
-            using (var fsaResponse = fsaRequest.GetResponse())
-            using (var expectedMetadataResponse = expectedMetadataRequest.GetResponse())
-            using (var fsaStream = fsaResponse.GetResponseStream())
-            using (var metadataStream = expectedMetadataResponse.GetResponseStream())
                 return Read(fsaStream, metadataStream);
+            }
+            catch (HttpRequestException e)
+            {
+                throw new IOException("Error retrieving data from the specified URLs.", e);
+            }
         }
 
         /// <summary>

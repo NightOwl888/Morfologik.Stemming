@@ -1,6 +1,7 @@
 ﻿using J2N;
 using J2N.Collections.Generic.Extensions;
 using J2N.Text;
+using Morfologik.Stemming.Support;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -98,7 +99,7 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Gets all metadata attributes.
         /// </summary>
-        public IDictionary<DictionaryAttribute, string> Attributes => attributes.AsReadOnly();
+        public IDictionary<DictionaryAttribute, string> Attributes => attributes; // Morfologik.Stemming: Changed this to create a read-only instance in the constructor instead of on each call to the Attributes property.
 
         // Cached attrs.
         public string Encoding => encoding;
@@ -131,13 +132,14 @@ namespace Morfologik.Stemming
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             this.boolAttributes = new Dictionary<DictionaryAttribute, bool>();
-            this.attributes = new Dictionary<DictionaryAttribute, string>();
+            var tempAttributes = new Dictionary<DictionaryAttribute, string>();
             IDictionary<DictionaryAttribute, string> attributeMap = new Dictionary<DictionaryAttribute, string>(DefaultAttributes);
             foreach (var attr in attrs)
             {
-                attributes[attr.Key] = attr.Value;
+                tempAttributes[attr.Key] = attr.Value;
                 attributeMap[attr.Key] = attr.Value;
             }
+            this.attributes = JCG.Extensions.DictionaryExtensions.AsReadOnly(tempAttributes); // Morfologik.Stemming: Changed this to create a read-only instance in the constructor instead of on each call to the Attributes property.
 
             // Convert some attrs from the map to local fields for performance reasons.
             ISet<DictionaryAttribute> requiredAttributes = new HashSet<DictionaryAttribute>(RequiredAttributes);
@@ -235,6 +237,11 @@ namespace Morfologik.Stemming
             this.separator = encoded[0];
         }
 
+        static DictionaryMetadata()
+        {
+            EncodingProviderInitializer.EnsureInitialized(); // Morfologik.Stemming specific - initialize encoding provider
+        }
+
         /// <summary>
         /// Gets a new <see cref="System.Text.Encoding"/> for the <see cref="Encoding"/>. 
         /// </summary>
@@ -297,7 +304,12 @@ namespace Morfologik.Stemming
         /// <returns>Returns the expected path of a metadata file.</returns>
         public static string GetExpectedMetadataLocation(string dictionary)
         {
-            return Path.Combine(new FileInfo(dictionary).DirectoryName, GetExpectedMetadataFileName(dictionary));
+            // Morfologik.Stemming: Added guard clause and null path check
+            if (dictionary == null)
+                throw new ArgumentNullException(nameof(dictionary));
+
+            string directoryPath = Path.GetDirectoryName(Path.GetFullPath(dictionary)) ?? throw new InvalidOperationException($"'{dictionary}' did not resolve to a valid path.");
+            return Path.Combine(directoryPath, GetExpectedMetadataFileName(dictionary));
         }
 
         /// <summary>
@@ -375,15 +387,6 @@ namespace Morfologik.Stemming
             }
 
             properties.SaveProperties(writer, "# " + GetType().Name);
-        }
-
-        static DictionaryMetadata()
-        {
-#if NETSTANDARD
-            // Support for iso-8859-1 encoding. See: https://docs.microsoft.com/en-us/dotnet/api/system.text.codepagesencodingprovider?view=netcore-2.0
-            var encodingProvider = CodePagesEncodingProvider.Instance;
-            System.Text.Encoding.RegisterProvider(encodingProvider);
-#endif
         }
     }
 }

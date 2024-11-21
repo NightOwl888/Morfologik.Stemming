@@ -4,17 +4,34 @@
     <!-- Changing this setting will allow testing on all target frameworks within Visual Studio 2017.
     Note that the main libraries are multi-targeted, so this has no effect on how they are compiled,
     this setting only affects the test projects. -->
-    <!--<TargetFramework>net461</TargetFramework>-->
-    <!--<TargetFramework>netcoreapp3.1</TargetFramework>-->
-    <!--<TargetFramework>net5.0</TargetFramework>-->
-    <!--<TargetFramework>net6.0</TargetFramework>-->
+    <!--<TargetFramework>net471</TargetFramework>-->
+    <!--<TargetFramework>net48</TargetFramework>-->
+    <!--<TargetFramework>net8.0</TargetFramework>-->
+    <!--<TargetFramework>net9.0</TargetFramework>-->
     <TestAllTargetFrameworks>true</TestAllTargetFrameworks>
 
     <!-- Allow the build script to pass in the test frameworks to build for.
       This overrides the above TargetFramework setting. 
       TODO: Due to a parsing bug, we cannot pass a string with a ; to dotnet msbuild, so passing true as a workaround -->
-    <TargetFrameworks Condition=" '$(TestAllTargetFrameworks)' == 'true' ">net6.0;net5.0;netcoreapp3.1;net461</TargetFrameworks>
+
+    <!-- Test Client to DLL target works as follows:
+
+      Test Client       | Target Under Test
+      net9.0            | net9.0
+      net8.0            | net8.0
+      net48             | net462
+      net471            | netstandard2.0
+      
+    -->
+    
+    <TargetFrameworks Condition=" '$(TestAllTargetFrameworks)' == 'true' ">net9.0;net8.0</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(TestAllTargetFrameworks)' == 'true' AND $([MSBuild]::IsOsPlatform('Windows')) ">$(TargetFrameworks);net48;net471</TargetFrameworks>
     <TargetFramework Condition=" '$(TargetFrameworks)' != '' "></TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Mismatched Target Framework (to override the target framework under test)">
+    <SetTargetFramework></SetTargetFramework>
+    <SetTargetFramework Condition=" '$(TargetFramework)' == 'net471' ">TargetFramework=netstandard2.0</SetTargetFramework>
   </PropertyGroup>
   
 </Project>

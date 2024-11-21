@@ -1,6 +1,7 @@
 ﻿using J2N.IO;
 using J2N.Text;
 using Morfologik.Fsa;
+using Morfologik.Stemming.Support;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -110,6 +111,11 @@ namespace Morfologik.Stemming
             decoder = dictionary.Metadata.Decoder;
             encoder = dictionary.Metadata.Encoder;
             separatorChar = dictionary.Metadata.SeparatorAsChar;
+        }
+
+        static DictionaryLookup()
+        {
+            EncodingProviderInitializer.EnsureInitialized(); // Morfologik.Stemming specific - initialize encoding provider
         }
 
         /// <summary>

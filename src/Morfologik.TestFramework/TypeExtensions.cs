@@ -11,7 +11,7 @@ namespace Morfologik.TestFramework
         /// </summary>
         public static Stream getResourceAsStream(this Type t, string name)
         {
-            return t.Assembly.FindAndGetManifestResourceStream(t, name);
+            return t.Assembly.FindAndGetManifestResourceStream(t, name) ?? throw new InvalidOperationException($"Could not find manifest resource stream '{name}' using type '{t.FullName}'.");
         }
     }
 }

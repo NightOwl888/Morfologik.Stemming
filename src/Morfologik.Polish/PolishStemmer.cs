@@ -37,6 +37,12 @@ namespace Morfologik.Stemming.Polish
                         throw new IOException("Polish dictionary resource not found.");
                     }
 
+                    // Morofologik.Stemming: added additional null guard for metadata
+                    if (metadataStream == null)
+                    {
+                        throw new IOException("Polish dictionary metadata resource not found.");
+                    }
+
                     return Dictionary.Read(dictStream, metadataStream);
                 }
             }
