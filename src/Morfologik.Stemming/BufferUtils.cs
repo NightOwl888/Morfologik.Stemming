@@ -125,15 +125,7 @@ namespace Morfologik.Stemming
             //Debug.Assert( decoder.malformedInputAction() == CodingErrorAction.REPORT;
 
             chars = ClearAndEnsureCapacity(chars, decoder.GetMaxCharCount(bytes.Remaining));
-
-            bytes.Mark();
-
-            byte[] b = ToArray(bytes);
-            string decoded = decoder.GetString(b);
-            chars.Put(decoded);
-
-            chars.Flip();
-            bytes.Reset();
+            chars.Limit = decoder.GetChars(bytes.Array, bytes.Position, bytes.Remaining, chars.Array, chars.Position);
 
             return chars;
         }
@@ -146,15 +138,7 @@ namespace Morfologik.Stemming
             //assert encoder.malformedInputAction() == CodingErrorAction.REPORT;
 
             bytes = ClearAndEnsureCapacity(bytes, encoder.GetMaxByteCount(chars.Remaining));
-
-            chars.Mark();
-
-            var temp = chars.ToString();
-            byte[] b = encoder.GetBytes(temp);
-            bytes.Put(b);
-
-            bytes.Flip();
-            chars.Reset();
+            bytes.Limit = encoder.GetBytes(chars.Array, chars.Position, chars.Remaining, bytes.Array, bytes.Position);
 
             return bytes;
         }
