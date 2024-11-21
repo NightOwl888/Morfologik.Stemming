@@ -99,7 +99,7 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Gets all metadata attributes.
         /// </summary>
-        public IDictionary<DictionaryAttribute, string> Attributes => JCG.Extensions.DictionaryExtensions.AsReadOnly(attributes);
+        public IDictionary<DictionaryAttribute, string> Attributes => attributes; // Morfologik.Stemming: Changed this to create a read-only instance in the constructor instead of on each call to the Attributes property.
 
         // Cached attrs.
         public string Encoding => encoding;
@@ -132,13 +132,14 @@ namespace Morfologik.Stemming
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             this.boolAttributes = new Dictionary<DictionaryAttribute, bool>();
-            this.attributes = new Dictionary<DictionaryAttribute, string>();
+            var tempAttributes = new Dictionary<DictionaryAttribute, string>();
             IDictionary<DictionaryAttribute, string> attributeMap = new Dictionary<DictionaryAttribute, string>(DefaultAttributes);
             foreach (var attr in attrs)
             {
-                attributes[attr.Key] = attr.Value;
+                tempAttributes[attr.Key] = attr.Value;
                 attributeMap[attr.Key] = attr.Value;
             }
+            this.attributes = JCG.Extensions.DictionaryExtensions.AsReadOnly(tempAttributes); // Morfologik.Stemming: Changed this to create a read-only instance in the constructor instead of on each call to the Attributes property.
 
             // Convert some attrs from the map to local fields for performance reasons.
             ISet<DictionaryAttribute> requiredAttributes = new HashSet<DictionaryAttribute>(RequiredAttributes);
