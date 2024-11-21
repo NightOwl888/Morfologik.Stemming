@@ -5,7 +5,7 @@
 ### Prerequisites
 
 - [PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell) 6.0 or higher (see [this question](http://stackoverflow.com/questions/1825585/determine-installed-powershell-version) to check your PowerShell version)
-- [.NET 6 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
+- [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 
 ### Execution
 
@@ -83,10 +83,8 @@ Then all you need to do is choose the `Morfologik Local Packages` feed from the 
 
 ### Prerequisites
 
-1. Visual Studio 2019 or higher
-2. [.NET 6.0 SDK or higher](https://dotnet.microsoft.com/download/visual-studio-sdks)
-
-> **NOTE:** Preview versions of .NET SDK require the "Use previews of the .NET SDK (requires restart)" option to be enabled in Visual Studio under Tools > Options > Environment > Preview Features. .NET 6.0 is not supported on Visual Studio 2019, so the only option available for building on VS 2019 is to use a pre-release .NET 6.0 SDK.
+1. Visual Studio 2022 or higher
+2. [.NET 9.0 SDK or higher](https://dotnet.microsoft.com/download/visual-studio-sdks)
 
 ### Execution
 
