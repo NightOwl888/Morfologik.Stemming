@@ -304,7 +304,12 @@ namespace Morfologik.Stemming
         /// <returns>Returns the expected path of a metadata file.</returns>
         public static string GetExpectedMetadataLocation(string dictionary)
         {
-            return Path.Combine(Path.GetDirectoryName(Path.GetFullPath(dictionary)) ?? string.Empty, GetExpectedMetadataFileName(dictionary));
+            // Morfologik.Stemming: Added guard clause and null path check
+            if (dictionary == null)
+                throw new ArgumentNullException(nameof(dictionary));
+
+            string directoryPath = Path.GetDirectoryName(Path.GetFullPath(dictionary)) ?? throw new InvalidOperationException($"'{dictionary}' did not resolve to a valid path.");
+            return Path.Combine(directoryPath, GetExpectedMetadataFileName(dictionary));
         }
 
         /// <summary>
