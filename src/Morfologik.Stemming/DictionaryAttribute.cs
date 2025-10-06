@@ -361,11 +361,11 @@ namespace Morfologik.Stemming
         /// Input conversion pairs to replace non-standard characters before search in a speller dictionary.
         /// For example, common ligatures can be replaced here.
         /// </summary>
-        public static readonly DictionaryAttribute<JCG.LinkedDictionary<string, string>> InputConversion =
-            new DictionaryAttribute<JCG.LinkedDictionary<string, string>>("fsa.dict.input-conversion", DictionaryAttribute.InputConversion,
+        public static readonly DictionaryAttribute<JCG.OrderedDictionary<string, string>> InputConversion =
+            new DictionaryAttribute<JCG.OrderedDictionary<string, string>>("fsa.dict.input-conversion", DictionaryAttribute.InputConversion,
             fromString: (string propertyName, string value) =>
             {
-                var conversionPairs = new JCG.LinkedDictionary<string, string>();
+                var conversionPairs = new JCG.OrderedDictionary<string, string>();
                 string[] replacements = PairSplit!.Split(value);
                 foreach (var stringPair in replacements)
                 {
@@ -391,11 +391,11 @@ namespace Morfologik.Stemming
         /// <para/>
         /// Useful for dictionaries that do have certain standards imposed.
         /// </summary>
-        public static readonly DictionaryAttribute<JCG.LinkedDictionary<string, string>> OutputConversion =
-            new DictionaryAttribute<JCG.LinkedDictionary<string, string>>("fsa.dict.output-conversion", DictionaryAttribute.OutputConversion,
+        public static readonly DictionaryAttribute<JCG.OrderedDictionary<string, string>> OutputConversion =
+            new DictionaryAttribute<JCG.OrderedDictionary<string, string>>("fsa.dict.output-conversion", DictionaryAttribute.OutputConversion,
             fromString: (string propertyName, string value) =>
             {
-                var conversionPairs = new JCG.LinkedDictionary<string, string>();
+                var conversionPairs = new JCG.OrderedDictionary<string, string>();
                 string[] replacements = PairSplit!.Split(value);
                 foreach (var stringPair in replacements)
                 {
@@ -421,11 +421,11 @@ namespace Morfologik.Stemming
         /// and this may be specified here to allow looking for replacements of <c>rz</c> with <c>ż</c>
         /// and vice versa.
         /// </summary>
-        public static readonly DictionaryAttribute<JCG.LinkedDictionary<string, IList<string>>> ReplacementPairs =
-            new DictionaryAttribute<JCG.LinkedDictionary<string, IList<string>>>("fsa.dict.speller.replacement-pairs", DictionaryAttribute.ReplacementPairs,
+        public static readonly DictionaryAttribute<JCG.OrderedDictionary<string, IList<string>>> ReplacementPairs =
+            new DictionaryAttribute<JCG.OrderedDictionary<string, IList<string>>>("fsa.dict.speller.replacement-pairs", DictionaryAttribute.ReplacementPairs,
             fromString: (string propertyName, string value) =>
             {
-                var replacementPairs = new JCG.LinkedDictionary<string, IList<string>>();
+                var replacementPairs = new JCG.OrderedDictionary<string, IList<string>>();
                 string[] replacements = PairSplit!.Split(value);
                 foreach (var stringPair in replacements)
                 {
