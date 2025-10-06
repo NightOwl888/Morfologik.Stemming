@@ -57,24 +57,24 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Replacement pairs for non-obvious candidate search in a speller dictionary.
         /// </summary>
-        private readonly IDictionary<string, IList<string>> replacementPairs = new JCG.LinkedDictionary<string, IList<string>>();
+        private readonly IDictionary<string, IList<string>> replacementPairs = new JCG.OrderedDictionary<string, IList<string>>();
 
         /// <summary>
         /// Conversion pairs for input conversion, for example to replace ligatures.
         /// </summary>
-        private readonly IDictionary<string, string> inputConversion = new JCG.LinkedDictionary<string, string>();
+        private readonly IDictionary<string, string> inputConversion = new JCG.OrderedDictionary<string, string>();
 
         /// <summary>
         /// Conversion pairs for output conversion, for example to replace ligatures.
         /// </summary>
-        private readonly IDictionary<string, string> outputConversion = new JCG.LinkedDictionary<string, string>();
+        private readonly IDictionary<string, string> outputConversion = new JCG.OrderedDictionary<string, string>();
 
         /// <summary>
         /// Equivalent characters (treated similarly as equivalent chars with and without
         /// diacritics). For example, Polish <c>ł</c> can be specified as equivalent to <c>l</c>.
         /// This implements a feature similar to hunspell MAP in the affix file.
         /// </summary>
-        private readonly IDictionary<char, IList<char>> equivalentChars = new JCG.LinkedDictionary<char, IList<char>>();
+        private readonly IDictionary<char, IList<char>> equivalentChars = new JCG.OrderedDictionary<char, IList<char>>();
 
         /// <summary>
         /// All attributes.
