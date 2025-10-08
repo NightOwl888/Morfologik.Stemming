@@ -104,10 +104,9 @@ namespace Morfologik.Stemming
         public ByteBuffer GetStemBytes(ByteBuffer? target)
         {
             target = BufferUtils.ClearAndEnsureCapacity(target, stemBuffer.Remaining);
-            stemBuffer.Mark();
-            target.Put(stemBuffer);
-            stemBuffer.Reset();
+            target.Put(stemBuffer.Array, stemBuffer.Position, stemBuffer.Remaining);
             target.Flip();
+
             return target;
         }
 
@@ -124,10 +123,9 @@ namespace Morfologik.Stemming
         public ByteBuffer GetTagBytes(ByteBuffer? target)
         {
             target = BufferUtils.ClearAndEnsureCapacity(target, tagBuffer.Remaining);
-            tagBuffer.Mark();
-            target.Put(tagBuffer);
-            tagBuffer.Reset();
+            target.Put(tagBuffer.Array, tagBuffer.Position, tagBuffer.Remaining);
             target.Flip();
+
             return target;
         }
 
@@ -149,10 +147,9 @@ namespace Morfologik.Stemming
                 throw new InvalidOperationException("wordBuffer must be set prior to calling GetWordBytes(ByteBuffer)");
 
             target = BufferUtils.ClearAndEnsureCapacity(target, wordBuffer.Remaining);
-            wordBuffer.Mark();
-            target.Put(wordBuffer);
-            wordBuffer.Reset();
+            target.Put(wordBuffer.Array, wordBuffer.Position, wordBuffer.Remaining);
             target.Flip();
+
             return target;
         }
 
@@ -162,10 +159,8 @@ namespace Morfologik.Stemming
         /// </summary>
         public ICharSequence? GetTag()
         {
-            //decoder.GetChars(tagBuffer, 0, tagBuffer.Length, tagCharSequence, 0);
-            //return tagCharSequence.Length == 0 ? null : new string(tagCharSequence);
             tagCharSequence = BufferUtils.BytesToChars(decoder, tagBuffer, tagCharSequence);
-            return tagCharSequence.Length == 0 ? null : tagCharSequence.ToString().AsCharSequence();
+            return tagCharSequence.Length == 0 ? null : tagCharSequence;
         }
 
         /// <summary>
@@ -174,11 +169,8 @@ namespace Morfologik.Stemming
         /// </summary>
         public ICharSequence? GetStem()
         {
-            //decoder.GetChars(stemBuffer, 0, stemBuffer.Length, stemCharSequence, 0);
-            //return stemCharSequence.Length == 0 ? null : new string(stemCharSequence);
-
             stemCharSequence = BufferUtils.BytesToChars(decoder, stemBuffer, stemCharSequence);
-            return stemCharSequence.Length == 0 ? null : stemCharSequence.ToString().AsCharSequence();
+            return stemCharSequence.Length == 0 ? null : stemCharSequence;
         }
 
         /// <summary>
@@ -249,11 +241,5 @@ namespace Morfologik.Stemming
             this.wordBuffer = wordBuffer;
             this.wordCharSequence = word;
         }
-
-        internal void Update(ByteBuffer wordBuffer, char[] word) => Update(wordBuffer, word.AsCharSequence());
-
-        internal void Update(ByteBuffer wordBuffer, StringBuilder word) => Update(wordBuffer, word.AsCharSequence());
-
-        internal void Update(ByteBuffer wordBuffer, string word) => Update(wordBuffer, word.AsCharSequence());
     }
 }
