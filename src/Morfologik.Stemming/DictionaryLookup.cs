@@ -229,12 +229,43 @@ namespace Morfologik.Stemming
                             }
                         }
 
+                        /////*
+                        //// * Decode the stem into stem buffer.
+                        //// */
+                        ////wordData.stemBuffer = sequenceEncoder.Decode(wordData.stemBuffer,
+                        ////                                         byteBuffer,
+                        ////                                         ByteBuffer.Wrap(ba, 0, sepPos));
+
                         /*
-                         * Decode the stem into stem buffer.
+                         * Decode the stem into the stem buffer.
                          */
-                        wordData.stemBuffer = sequenceEncoder.Decode(wordData.stemBuffer,
-                                                                 byteBuffer,
-                                                                 ByteBuffer.Wrap(ba, 0, sepPos));
+                        int encodedLength = sepPos;
+                        int maxDecodedByteCount =
+                            sequenceEncoder.GetMaxDecodedByteCount(
+                                byteBuffer.Remaining,
+                                encodedLength);
+
+                        wordData.stemBuffer =
+                            BufferUtils.ClearAndEnsureCapacity(
+                                wordData.stemBuffer,
+                                maxDecodedByteCount);
+
+                        if (!sequenceEncoder.TryDecode(
+                            byteBuffer.Array.AsSpan(
+                                byteBuffer.Position,
+                                byteBuffer.Remaining),
+                            ba.AsSpan(0, encodedLength),
+                            wordData.stemBuffer.Array.AsSpan(0, maxDecodedByteCount),
+                            out int bytesWritten))
+                        {
+                            // The destination was sized using GetMaxDecodedByteCount(),
+                            // so this should never happen for a valid encoder.
+                            throw new InvalidOperationException(
+                                "The sequence encoder produced more decoded bytes than its maximum byte count.");
+                        }
+
+                        wordData.stemBuffer.Limit = bytesWritten;
+                        wordData.stemBuffer.Position = 0;
 
                         // Skip separator character.
                         sepPos++;
@@ -376,12 +407,43 @@ namespace Morfologik.Stemming
                             }
                         }
 
+                        /////*
+                        //// * Decode the stem into stem buffer.
+                        //// */
+                        ////wordData.stemBuffer = sequenceEncoder.Decode(wordData.stemBuffer,
+                        ////                                         byteBuffer,
+                        ////                                         ByteBuffer.Wrap(ba, 0, sepPos));
+
                         /*
-                         * Decode the stem into stem buffer.
+                         * Decode the stem into the stem buffer.
                          */
-                        wordData.stemBuffer = sequenceEncoder.Decode(wordData.stemBuffer,
-                                                                 byteBuffer,
-                                                                 ByteBuffer.Wrap(ba, 0, sepPos));
+                        int encodedLength = sepPos;
+                        int maxDecodedByteCount =
+                            sequenceEncoder.GetMaxDecodedByteCount(
+                                byteBuffer.Remaining,
+                                encodedLength);
+
+                        wordData.stemBuffer =
+                            BufferUtils.ClearAndEnsureCapacity(
+                                wordData.stemBuffer,
+                                maxDecodedByteCount);
+
+                        if (!sequenceEncoder.TryDecode(
+                            byteBuffer.Array.AsSpan(
+                                byteBuffer.Position,
+                                byteBuffer.Remaining),
+                            ba.AsSpan(0, encodedLength),
+                            wordData.stemBuffer.Array.AsSpan(0, maxDecodedByteCount),
+                            out int bytesWritten))
+                        {
+                            // The destination was sized using GetMaxDecodedByteCount(),
+                            // so this should never happen for a valid encoder.
+                            throw new InvalidOperationException(
+                                "The sequence encoder produced more decoded bytes than its maximum byte count.");
+                        }
+
+                        wordData.stemBuffer.Limit = bytesWritten;
+                        wordData.stemBuffer.Position = 0;
 
                         // Skip separator character.
                         sepPos++;
@@ -523,12 +585,44 @@ namespace Morfologik.Stemming
                             }
                         }
 
+                        /////*
+                        //// * Decode the stem into stem buffer.
+                        //// */
+                        ////wordData.stemBuffer = sequenceEncoder.Decode(wordData.stemBuffer,
+                        ////                                         byteBuffer,
+                        ////                                         ByteBuffer.Wrap(ba, 0, sepPos));
+
+
                         /*
-                         * Decode the stem into stem buffer.
+                         * Decode the stem into the stem buffer.
                          */
-                        wordData.stemBuffer = sequenceEncoder.Decode(wordData.stemBuffer,
-                                                                 byteBuffer,
-                                                                 ByteBuffer.Wrap(ba, 0, sepPos));
+                        int encodedLength = sepPos;
+                        int maxDecodedByteCount =
+                            sequenceEncoder.GetMaxDecodedByteCount(
+                                byteBuffer.Remaining,
+                                encodedLength);
+
+                        wordData.stemBuffer =
+                            BufferUtils.ClearAndEnsureCapacity(
+                                wordData.stemBuffer,
+                                maxDecodedByteCount);
+
+                        if (!sequenceEncoder.TryDecode(
+                            byteBuffer.Array.AsSpan(
+                                byteBuffer.Position,
+                                byteBuffer.Remaining),
+                            ba.AsSpan(0, encodedLength),
+                            wordData.stemBuffer.Array.AsSpan(0, maxDecodedByteCount),
+                            out int bytesWritten))
+                        {
+                            // The destination was sized using GetMaxDecodedByteCount(),
+                            // so this should never happen for a valid encoder.
+                            throw new InvalidOperationException(
+                                "The sequence encoder produced more decoded bytes than its maximum byte count.");
+                        }
+
+                        wordData.stemBuffer.Limit = bytesWritten;
+                        wordData.stemBuffer.Position = 0;
 
                         // Skip separator character.
                         sepPos++;
@@ -670,12 +764,45 @@ namespace Morfologik.Stemming
                             }
                         }
 
+                        /////*
+                        //// * Decode the stem into stem buffer.
+                        //// */
+                        ////wordData.stemBuffer = sequenceEncoder.Decode(wordData.stemBuffer,
+                        ////                                         byteBuffer,
+                        ////                                         ByteBuffer.Wrap(ba, 0, sepPos));
+
+
                         /*
-                         * Decode the stem into stem buffer.
+                         * Decode the stem into the stem buffer.
                          */
-                        wordData.stemBuffer = sequenceEncoder.Decode(wordData.stemBuffer,
-                                                                 byteBuffer,
-                                                                 ByteBuffer.Wrap(ba, 0, sepPos));
+                        int encodedLength = sepPos;
+                        int maxDecodedByteCount =
+                            sequenceEncoder.GetMaxDecodedByteCount(
+                                byteBuffer.Remaining,
+                                encodedLength);
+
+                        wordData.stemBuffer =
+                            BufferUtils.ClearAndEnsureCapacity(
+                                wordData.stemBuffer,
+                                maxDecodedByteCount);
+
+                        if (!sequenceEncoder.TryDecode(
+                            byteBuffer.Array.AsSpan(
+                                byteBuffer.Position,
+                                byteBuffer.Remaining),
+                            ba.AsSpan(0, encodedLength),
+                            wordData.stemBuffer.Array.AsSpan(0, maxDecodedByteCount),
+                            out int bytesWritten))
+                        {
+                            // The destination was sized using GetMaxDecodedByteCount(),
+                            // so this should never happen for a valid encoder.
+                            throw new InvalidOperationException(
+                                "The sequence encoder produced more decoded bytes than its maximum byte count.");
+                        }
+
+                        wordData.stemBuffer.Limit = bytesWritten;
+                        wordData.stemBuffer.Position = 0;
+
 
                         // Skip separator character.
                         sepPos++;

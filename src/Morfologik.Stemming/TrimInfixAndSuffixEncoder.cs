@@ -1,5 +1,4 @@
-﻿using J2N.IO;
-using System.Diagnostics;
+﻿using System;
 
 namespace Morfologik.Stemming
 {
@@ -31,141 +30,192 @@ namespace Morfologik.Stemming
     /// encoded: BBCr
     /// </code>
     /// </summary>
-    public class TrimInfixAndSuffixEncoder : ISequenceEncoder
+    public sealed class TrimInfixAndSuffixEncoder : ISequenceEncoder // Morfologik.Stemming specific - marked sealed to prevent inheritance and ensure singleton usage
     {
+        private TrimInfixAndSuffixEncoder() { } // Singleton only
+
+        /// <summary>
+        /// Gets the singleton instance.
+        /// </summary>
+        public static TrimInfixAndSuffixEncoder Instance { get; } = new TrimInfixAndSuffixEncoder();
+
         /// <summary>
         /// Maximum encodable single-byte code.
         /// </summary>
         private const int RemoveEverything = 255;
-        private ByteBuffer scratch = ByteBuffer.Allocate(0);
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public virtual ByteBuffer Encode(ByteBuffer reuse, ByteBuffer source, ByteBuffer target)
+
+        /// <inheritdoc cref="ISequenceEncoder.PrefixBytes"/>
+        public const int PrefixBytes = 3;
+
+        int ISequenceEncoder.PrefixBytes => PrefixBytes;
+
+        /// <inheritdoc/>
+        public int GetMaxEncodedByteCount(int sourceByteCount, int targetByteCount)
         {
-            Debug.Assert(source.HasArray &&
-                   source.Position == 0 &&
-                   source.ArrayOffset == 0);
+            return checked(PrefixBytes + targetByteCount);
+        }
 
-            Debug.Assert(target.HasArray &&
-                   target.Position == 0 &&
-                   target.ArrayOffset == 0);
+        /// <inheritdoc/>
+        public int GetMaxDecodedByteCount(int sourceByteCount, int encodedByteCount)
+        {
+            return checked(sourceByteCount + encodedByteCount - PrefixBytes);
+        }
 
-            // Search for the infix that can we can encode and remove from src
-            // to get a maximum-length prefix of dst. This could be done more efficiently
-            // by running a smarter longest-common-subsequence algorithm and some pruning (?).
-            //
-            // For now, naive loop should do.
-
-            // There can be only two positions for the infix to delete:
-            // 1) we remove leading bytes, even if they are partially matching (but a longer match
-            //    exists somewhere later on).
-            // 2) we leave max. matching prefix and remove non-matching bytes that follow. 
+        /// <inheritdoc/>
+        public bool TryEncode(ReadOnlySpan<byte> source, ReadOnlySpan<byte> target, Span<byte> destination, out int bytesWritten)
+        {
             int maxInfixIndex = 0;
             int maxSubsequenceLength = BufferUtils.SharedPrefixLength(source, target);
             int maxInfixLength = 0;
-            foreach (int i in new int[] { 0, maxSubsequenceLength })
+
+            // There can be only two positions for the infix to delete:
+            //
+            // 1) We remove leading bytes, even if they are partially matching
+            //    (but a longer match exists somewhere later on).
+            //
+            // 2) We leave the maximum matching prefix and remove non-matching
+            //    bytes that follow.
+            //
+            // This follows the upstream implementation. The Java implementation
+            // constructs a temporary sequence with the infix removed for each
+            // candidate. We compare that virtual sequence directly instead,
+            // avoiding a temporary buffer.
+            for (int i = 0; i <= 1; i++)
             {
-                for (int j = 1; j <= source.Remaining - i; j++)
+                int infixIndex = i == 0 ? 0 : maxSubsequenceLength;
+
+                for (int infixLength = 1;
+                    infixLength <= source.Length - infixIndex;
+                    infixLength++)
                 {
-                    // Compute temporary src with the infix removed.
-                    // Concatenate in scratch space for simplicity.
-                    int len2 = source.Remaining - (i + j);
-                    scratch = BufferUtils.ClearAndEnsureCapacity(scratch, i + len2);
-                    scratch.Put(source.Array, 0, i);
-                    scratch.Put(source.Array, i + j, len2);
-                    scratch.Flip();
+                    int sharedPrefix = BufferUtils.SharedPrefixLengthAfterRemoving(
+                        source,
+                        infixIndex,
+                        infixLength,
+                        target);
 
-                    int sharedPrefix = BufferUtils.SharedPrefixLength(scratch, target);
-
-                    // Only update maxSubsequenceLength if we will be able to encode it.
-                    if (sharedPrefix > 0 && sharedPrefix > maxSubsequenceLength && i < RemoveEverything && j < RemoveEverything)
+                    // Only update maxSubsequenceLength if we will be able
+                    // to encode it.
+                    if (sharedPrefix > 0 &&
+                        sharedPrefix > maxSubsequenceLength &&
+                        infixIndex < RemoveEverything &&
+                        infixLength < RemoveEverything)
                     {
                         maxSubsequenceLength = sharedPrefix;
-                        maxInfixIndex = i;
-                        maxInfixLength = j;
+                        maxInfixIndex = infixIndex;
+                        maxInfixLength = infixLength;
                     }
                 }
             }
 
-            int truncateSuffixBytes = source.Remaining - (maxInfixLength + maxSubsequenceLength);
+            int truncateSuffixBytes =
+                source.Length - (maxInfixLength + maxSubsequenceLength);
 
-            // Special case: if we're removing the suffix in the infix code, move it
-            // to the suffix code instead.
+            // Special case: if we're removing the suffix in the infix code,
+            // move it to the suffix code instead.
             if (truncateSuffixBytes == 0 &&
-                maxInfixIndex + maxInfixLength == source.Remaining)
+                maxInfixIndex + maxInfixLength == source.Length)
             {
                 truncateSuffixBytes = maxInfixLength;
-                maxInfixIndex = maxInfixLength = 0;
+                maxInfixIndex = 0;
+                maxInfixLength = 0;
             }
 
             if (maxInfixIndex >= RemoveEverything ||
                 maxInfixLength >= RemoveEverything ||
                 truncateSuffixBytes >= RemoveEverything)
             {
-                maxInfixIndex = maxSubsequenceLength = 0;
-                maxInfixLength = truncateSuffixBytes = RemoveEverything;
+                maxInfixIndex = 0;
+                maxSubsequenceLength = 0;
+                maxInfixLength = RemoveEverything;
+                truncateSuffixBytes = RemoveEverything;
             }
 
-            int len1 = target.Remaining - maxSubsequenceLength;
-            reuse = BufferUtils.ClearAndEnsureCapacity(reuse, 3 + len1);
+            int suffixLength = target.Length - maxSubsequenceLength;
+            int requiredLength = PrefixBytes + suffixLength;
 
-            reuse.Put((byte)((maxInfixIndex + 'A') & 0xFF));
-            reuse.Put((byte)((maxInfixLength + 'A') & 0xFF));
-            reuse.Put((byte)((truncateSuffixBytes + 'A') & 0xFF));
-            reuse.Put(target.Array, maxSubsequenceLength, len1);
-            reuse.Flip();
+            if (destination.Length < requiredLength)
+            {
+                bytesWritten = 0;
+                return false;
+            }
 
-            return reuse;
+            destination[0] = (byte)(maxInfixIndex + 'A');
+            destination[1] = (byte)(maxInfixLength + 'A');
+            destination[2] = (byte)(truncateSuffixBytes + 'A');
+
+            target.Slice(maxSubsequenceLength).CopyTo(destination.Slice(PrefixBytes));
+
+            bytesWritten = requiredLength;
+            return true;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public virtual int PrefixBytes => 3;
-
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public virtual ByteBuffer Decode(ByteBuffer reuse, ByteBuffer source, ByteBuffer encoded)
+        /// <inheritdoc/>
+        public bool TryDecode(ReadOnlySpan<byte> source, ReadOnlySpan<byte> encoded, Span<byte> destination, out int bytesWritten)
         {
-            Debug.Assert(encoded.Remaining >= 3);
+            if (encoded.Length < PrefixBytes)
+            {
+                throw new ArgumentException("Encoded sequence must be at least 3 bytes long.", nameof(encoded));
+            }
 
-            int p = encoded.Position;
-            int infixIndex = (encoded.Get(p) - 'A') & 0xFF;
-            int infixLength = (encoded.Get(p + 1) - 'A') & 0xFF;
-            int truncateSuffixBytes = (encoded.Get(p + 2) - 'A') & 0xFF;
+            int infixIndex = (encoded[0] - 'A') & 0xFF;
+            int infixLength = (encoded[1] - 'A') & 0xFF;
+            int truncateSuffixBytes = (encoded[2] - 'A') & 0xFF;
 
             if (infixLength == RemoveEverything ||
                 truncateSuffixBytes == RemoveEverything)
             {
                 infixIndex = 0;
-                infixLength = source.Remaining;
+                infixLength = source.Length;
                 truncateSuffixBytes = 0;
             }
+            else
+            {
+                if (infixIndex > source.Length)
+                {
+                    throw new ArgumentException("Encoded sequence specifies an infix position beyond the end of the source.", nameof(encoded));
+                }
 
-            int len1 = source.Remaining - (infixIndex + infixLength + truncateSuffixBytes);
-            int len2 = encoded.Remaining - 3;
-            reuse = BufferUtils.ClearAndEnsureCapacity(reuse, infixIndex + len1 + len2);
+                if (infixLength > source.Length - infixIndex)
+                {
+                    throw new ArgumentException("Encoded sequence requests removal of more infix bytes than remain in the source.", nameof(encoded));
+                }
 
-            Debug.Assert(encoded.HasArray &&
-                   encoded.Position == 0 &&
-                   encoded.ArrayOffset == 0);
+                if (truncateSuffixBytes > source.Length - infixIndex - infixLength)
+                {
+                    throw new ArgumentException("Encoded sequence requests removal of more suffix bytes than remain after removing the infix.", nameof(encoded));
+                }
+            }
 
-            Debug.Assert(source.HasArray &&
-                   source.Position == 0 &&
-                   source.ArrayOffset == 0);
+            int lengthWithoutInfix = source.Length - (infixIndex + infixLength + truncateSuffixBytes);
+            int suffixLength = encoded.Length - 3;
+            int requiredLength = checked(infixIndex + lengthWithoutInfix + suffixLength);
 
-            reuse.Put(source.Array, 0, infixIndex);
-            reuse.Put(source.Array, infixIndex + infixLength, len1);
-            reuse.Put(encoded.Array, 3, len2);
-            reuse.Flip();
+            if (destination.Length < requiredLength)
+            {
+                bytesWritten = 0;
+                return false;
+            }
 
-            return reuse;
+            source.Slice(0, infixIndex).CopyTo(destination);
+
+            source.Slice(
+                infixIndex + infixLength,
+                lengthWithoutInfix).CopyTo(
+                    destination.Slice(infixIndex));
+
+            encoded.Slice(3).CopyTo(
+                destination.Slice(infixIndex + lengthWithoutInfix));
+
+            bytesWritten = requiredLength;
+            return true;
         }
 
-        // No need to override ToString() as it was only returning the type name, anyway
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return nameof(TrimInfixAndSuffixEncoder);
+        }
     }
 }

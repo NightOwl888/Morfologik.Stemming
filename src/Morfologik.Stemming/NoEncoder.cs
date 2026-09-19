@@ -1,47 +1,67 @@
-﻿using J2N.IO;
+﻿using System;
 
 namespace Morfologik.Stemming
 {
     /// <summary>
     /// No relative encoding at all (full target form is returned).
     /// </summary>
-    public class NoEncoder : ISequenceEncoder
+    public sealed class NoEncoder : ISequenceEncoder // Morfologik.Stemming specific - marked sealed to prevent inheritance and ensure singleton usage
     {
+        private NoEncoder() { } // Singleton only
+
         /// <summary>
-        /// 
+        /// Gets the singleton instance.
         /// </summary>
-        public virtual ByteBuffer Encode(ByteBuffer reuse, ByteBuffer source, ByteBuffer target)
+        public static NoEncoder Instance { get; } = new NoEncoder();
+
+
+        /// <inheritdoc cref="ISequenceEncoder.PrefixBytes"/>
+        public int PrefixBytes => 0;
+
+        /// <inheritdoc/>
+        public int GetMaxEncodedByteCount(int sourceByteCount, int targetByteCount)
         {
-            reuse = BufferUtils.ClearAndEnsureCapacity(reuse, target.Remaining);
-
-            target.Mark();
-            reuse.Put(target)
-                 .Flip();
-            target.Reset();
-
-            return reuse;
+            return targetByteCount;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public virtual ByteBuffer Decode(ByteBuffer reuse, ByteBuffer source, ByteBuffer encoded)
+        /// <inheritdoc/>
+        public int GetMaxDecodedByteCount(int sourceByteCount, int encodedByteCount)
         {
-            reuse = BufferUtils.ClearAndEnsureCapacity(reuse, encoded.Remaining);
-
-            encoded.Mark();
-            reuse.Put(encoded)
-                 .Flip();
-            encoded.Reset();
-
-            return reuse;
+            return encodedByteCount;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public virtual int PrefixBytes => 0;
+        /// <inheritdoc/>
+        public bool TryEncode(ReadOnlySpan<byte> source, ReadOnlySpan<byte> target, Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length < target.Length)
+            {
+                bytesWritten = 0;
+                return false;
+            }
 
-        // No need to override ToString() as it was only returning the type name, anyway
+            target.CopyTo(destination);
+            bytesWritten = target.Length;
+            return true;
+        }
+
+        /// <inheritdoc/>
+        public bool TryDecode(ReadOnlySpan<byte> source, ReadOnlySpan<byte> encoded, Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length < encoded.Length)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            encoded.CopyTo(destination);
+            bytesWritten = encoded.Length;
+            return true;
+        }
+
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return nameof(NoEncoder);
+        }
     }
 }

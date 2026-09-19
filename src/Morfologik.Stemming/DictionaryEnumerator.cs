@@ -119,11 +119,44 @@ namespace Morfologik.Stemming
             /*
              * Decode the stem into stem buffer.
              */
+            ////if (decodeStems)
+            ////{
+            ////    entry.stemBuffer = sequenceEncoder.Decode(entry.stemBuffer,
+            ////                                          inflectedBuffer,
+            ////                                          ByteBuffer.Wrap(ba, 0, sepPos));
+            ////}
+            ////else
+            ////{
+            ////    entry.stemBuffer = BufferUtils.ClearAndEnsureCapacity(entry.stemBuffer, sepPos);
+            ////    entry.stemBuffer.Put(ba, 0, sepPos);
+            ////    entry.stemBuffer.Flip();
+            ////}
+
             if (decodeStems)
             {
-                entry.stemBuffer = sequenceEncoder.Decode(entry.stemBuffer,
-                                                      inflectedBuffer,
-                                                      ByteBuffer.Wrap(ba, 0, sepPos));
+                int maxDecodedByteCount =
+                    sequenceEncoder.GetMaxDecodedByteCount(
+                        inflectedBuffer.Remaining,
+                        sepPos);
+
+                entry.stemBuffer = BufferUtils.ClearAndEnsureCapacity(
+                    entry.stemBuffer,
+                    maxDecodedByteCount);
+
+                if (!sequenceEncoder.TryDecode(
+                    inflectedBuffer.Array.AsSpan(
+                        inflectedBuffer.Position,
+                        inflectedBuffer.Remaining),
+                    ba.AsSpan(0, sepPos),
+                    entry.stemBuffer.Array.AsSpan(0, maxDecodedByteCount),
+                    out int bytesWritten))
+                {
+                    throw new InvalidOperationException(
+                        "The sequence encoder produced more decoded bytes than its maximum byte count.");
+                }
+
+                entry.stemBuffer.Limit = bytesWritten;
+                entry.stemBuffer.Position = 0;
             }
             else
             {
