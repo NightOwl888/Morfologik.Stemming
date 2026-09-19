@@ -64,7 +64,7 @@ namespace Morfologik.Stemming.Polish.Tests
             {
                 stems.Add(wd.GetStem().ToString());
                 tags.Add(wd.GetTag().ToString());
-                assertSame(word, wd.Word.ToString());
+                assertEquals(word, wd.Word.ToString());
             }
             assertTrue(stems.Contains("ligać"));
             assertTrue(stems.Contains("liga"));
