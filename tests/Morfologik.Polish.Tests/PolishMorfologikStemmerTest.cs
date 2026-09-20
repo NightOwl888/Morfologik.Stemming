@@ -55,16 +55,16 @@ namespace Morfologik.Stemming.Polish.Tests
             IStemmer s = new PolishStemmer();
 
             String word = "liga";
-            IList<WordData> response = s.Lookup(word);
+            DictionaryLookupResult response = s.Lookup(word.AsSpan());
             assertEquals(2, response.Count);
 
             HashSet<String> stems = new HashSet<String>();
             HashSet<String> tags = new HashSet<String>();
-            foreach (WordData wd in response)
+            foreach (WordData2 wd in response)
             {
-                stems.Add(wd.GetStem().ToString());
-                tags.Add(wd.GetTag().ToString());
-                assertSame(word, wd.Word.ToString());
+                stems.Add(wd.Stem.ToString());
+                tags.Add(wd.Tag.ToString());
+                assertEquals(word, wd.Word.ToString());
             }
             assertTrue(stems.Contains("ligać"));
             assertTrue(stems.Contains("liga"));
@@ -72,58 +72,60 @@ namespace Morfologik.Stemming.Polish.Tests
             assertTrue(tags.Contains("verb:fin:sg:ter:imperf:nonrefl+verb:fin:sg:ter:imperf:refl.nonrefl"));
 
             // Repeat to make sure we get the same values consistently.
-            foreach (WordData wd in response)
+            foreach (WordData2 wd in response)
             {
-                stems.Contains(wd.GetStem().ToString());
-                tags.Contains(wd.GetTag().ToString());
+                stems.Contains(wd.Stem.ToString());
+                tags.Contains(wd.Tag.ToString());
             }
 
             //String ENCODING = "UTF-8";
             Encoding ENCODING = Encoding.UTF8;
 
+            // Morfologik.Stemming TODO: Need to analyze whether we should still support getting bytes from WordData.
+            // If so, we need to implement GetStemBytes, GetTagBytes, and GetWordBytes in WordData2 and PolishStemmer.
             // Run the same consistency check for the returned buffers.
-            ByteBuffer temp = ByteBuffer.Allocate(100);
-            foreach (WordData wd in response)
-            {
-                // Buffer should be copied.
-                ByteBuffer copy = wd.GetStemBytes(null);
-                String stem = ENCODING.GetString(copy.Array, copy.ArrayOffset + copy.Position, copy.Remaining);
-                // The buffer should be present in stems set.
-                assertTrue(stem, stems.Contains(stem));
-                // Buffer large enough to hold the contents.
-                assertSame(temp, wd.GetStemBytes(temp));
-                // The copy and the clone should be identical.
-                assertEquals(0, copy.CompareTo(temp));
-            }
+            //ByteBuffer temp = ByteBuffer.Allocate(100);
+            //foreach (WordData2 wd in response)
+            //{
+            //    // Buffer should be copied.
+            //    ByteBuffer copy = wd.GetStemBytes(null);
+            //    String stem = ENCODING.GetString(copy.Array, copy.ArrayOffset + copy.Position, copy.Remaining);
+            //    // The buffer should be present in stems set.
+            //    assertTrue(stem, stems.Contains(stem));
+            //    // Buffer large enough to hold the contents.
+            //    assertSame(temp, wd.GetStemBytes(temp));
+            //    // The copy and the clone should be identical.
+            //    assertEquals(0, copy.CompareTo(temp));
+            //}
 
-            foreach (WordData wd in response)
-            {
-                // Buffer should be copied.
-                ByteBuffer copy = wd.GetTagBytes(null);
-                String tag = ENCODING.GetString(copy.Array, copy.ArrayOffset + copy.Position, copy.Remaining);
-                // The buffer should be present in tags set.
-                assertTrue(tag, tags.Contains(tag));
-                // Buffer large enough to hold the contents.
-                temp.Clear();
-                assertSame(temp, wd.GetTagBytes(temp));
-                // The copy and the clone should be identical.
-                assertEquals(0, copy.CompareTo(temp));
-            }
+            //foreach (WordData2 wd in response)
+            //{
+            //    // Buffer should be copied.
+            //    ByteBuffer copy = wd.GetTagBytes(null);
+            //    String tag = ENCODING.GetString(copy.Array, copy.ArrayOffset + copy.Position, copy.Remaining);
+            //    // The buffer should be present in tags set.
+            //    assertTrue(tag, tags.Contains(tag));
+            //    // Buffer large enough to hold the contents.
+            //    temp.Clear();
+            //    assertSame(temp, wd.GetTagBytes(temp));
+            //    // The copy and the clone should be identical.
+            //    assertEquals(0, copy.CompareTo(temp));
+            //}
 
-            foreach (WordData wd in response)
-            {
-                // Buffer should be copied.
-                ByteBuffer copy = wd.GetWordBytes(null);
-                assertNotNull(copy);
-                assertEquals(0, copy.CompareTo(ByteBuffer.Wrap(ENCODING.GetBytes(word))));
-            }
+            //foreach (WordData wd in response)
+            //{
+            //    // Buffer should be copied.
+            //    ByteBuffer copy = wd.GetWordBytes(null);
+            //    assertNotNull(copy);
+            //    assertEquals(0, copy.CompareTo(ByteBuffer.Wrap(ENCODING.GetBytes(word))));
+            //}
         }
 
         /* */
-        public static String asString(ICharSequence s)
+        public static String asString(ReadOnlyMemory<char> s)
         {
-            if (s == null)
-                return null;
+            //if (s == null)
+            //    return null;
             return s.ToString();
         }
 
@@ -131,10 +133,10 @@ namespace Morfologik.Stemming.Polish.Tests
         public static String[] stem(IStemmer s, String word)
         {
             List<String> result = new List<String>();
-            foreach (WordData wd in s.Lookup(word))
+            foreach (WordData2 wd in s.Lookup(word.AsSpan()))
             {
-                result.Add(asString(wd.GetStem()));
-                result.Add(asString(wd.GetTag()));
+                result.Add(asString(wd.Stem));
+                result.Add(asString(wd.Tag));
             }
             return result.ToArray();
         }

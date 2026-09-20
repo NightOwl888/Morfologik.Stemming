@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
 namespace Morfologik.Fsa
 {
@@ -187,6 +188,77 @@ namespace Morfologik.Fsa
             /* The sequence is a prefix of at least one sequence in the automaton. */
             reuse.Reset(MatchResult.SequenceIsAPrefix, 0, node);
             return reuse;
+        }
+
+
+        /// <summary>
+        /// Same as <see cref="Match(byte[], int, int, int)"/>, but allows passing
+        /// a reusable <see cref="MatchResult"/> object so that no intermediate garbage is
+        /// produced.
+        /// </summary>
+        /// <param name="reuse">The <see cref="MatchResult"/> to reuse.</param>
+        /// <param name="sequence">Input sequence to look for in the automaton.</param>
+        /// <param name="node">The node to start traversal from, typically the root node (<see cref="FSA.GetRootNode()"/>).</param>
+        /// <returns>The same object as <paramref name="reuse"/>, but with updated match <see cref="MatchResult.Kind"/>
+        /// and other relevant fields.</returns>
+        public MatchResult Match(MatchResult? reuse, ReadOnlySpan<byte> sequence, int node)
+        {
+            reuse ??= new MatchResult();
+            int start = 0;
+            int length = sequence.Length;
+
+            if (node == 0)
+            {
+                reuse.Reset(MatchResult.NoMatch, start, node);
+                return reuse;
+            }
+
+            FSA fsa = this.fsa;
+            int end = start + length;
+            for (int i = start; i < end; i++)
+            {
+                int arc = fsa.GetArc(node, sequence[i]);
+                if (arc != 0)
+                {
+                    if (i + 1 == end && fsa.IsArcFinal(arc))
+                    {
+                        /* The automaton has an exact match of the input sequence. */
+                        reuse.Reset(MatchResult.ExactMatch, i, node);
+                        return reuse;
+                    }
+
+                    if (fsa.IsArcTerminal(arc))
+                    {
+                        /* The automaton contains a prefix of the input sequence. */
+                        reuse.Reset(MatchResult.AutomatonHasPrefix, i + 1, node);
+                        return reuse;
+                    }
+
+                    // Make a transition along the arc.
+                    node = fsa.GetEndNode(arc);
+                }
+                else
+                {
+                    if (i > start)
+                    {
+                        reuse.Reset(MatchResult.AutomatonHasPrefix, i, node);
+                    }
+                    else
+                    {
+                        reuse.Reset(MatchResult.NoMatch, i, node);
+                    }
+                    return reuse;
+                }
+            }
+
+            /* The sequence is a prefix of at least one sequence in the automaton. */
+            reuse.Reset(MatchResult.SequenceIsAPrefix, 0, node);
+            return reuse;
+        }
+
+        internal MatchResult Match(ReadOnlySpan<byte> sequence)
+        {
+            return Match(new MatchResult(), sequence, fsa.GetRootNode());
         }
 
         /// <summary>

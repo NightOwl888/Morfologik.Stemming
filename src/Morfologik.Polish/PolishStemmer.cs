@@ -66,28 +66,38 @@ namespace Morfologik.Stemming.Polish
         /// followed by a separator. The result is a stem (decompressed accordingly
         /// to the dictionary's specification) and an optional tag data.
         /// </summary>
-        public IList<WordData> Lookup(ICharSequence word) => lookup.Lookup(word);
+        /// <param name="word">The word to look up.</param>
+        /// <param name="reuse">An optional existing <see cref="DictionaryLookupResult"/> buffer to reuse.</param>
+        /// <returns>The lookup result.</returns>
+        public DictionaryLookupResult Lookup(ReadOnlySpan<char> word, DictionaryLookupResult? reuse) => lookup.Lookup(word, reuse);
 
-        /// <summary>
-        /// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
-        /// followed by a separator. The result is a stem (decompressed accordingly
-        /// to the dictionary's specification) and an optional tag data.
-        /// </summary>
-        public IList<WordData> Lookup(char[] word) => lookup.Lookup(word);
+        ///// <summary>
+        ///// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
+        ///// followed by a separator. The result is a stem (decompressed accordingly
+        ///// to the dictionary's specification) and an optional tag data.
+        ///// </summary>
+        //public IList<WordData> Lookup(ICharSequence word) => lookup.Lookup(word);
 
-        /// <summary>
-        /// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
-        /// followed by a separator. The result is a stem (decompressed accordingly
-        /// to the dictionary's specification) and an optional tag data.
-        /// </summary>
-        public IList<WordData> Lookup(StringBuilder word) => lookup.Lookup(word);
+        ///// <summary>
+        ///// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
+        ///// followed by a separator. The result is a stem (decompressed accordingly
+        ///// to the dictionary's specification) and an optional tag data.
+        ///// </summary>
+        //public IList<WordData> Lookup(char[] word) => lookup.Lookup(word);
 
-        /// <summary>
-        /// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
-        /// followed by a separator. The result is a stem (decompressed accordingly
-        /// to the dictionary's specification) and an optional tag data.
-        /// </summary>
-        public IList<WordData> Lookup(string word) => lookup.Lookup(word);
+        ///// <summary>
+        ///// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
+        ///// followed by a separator. The result is a stem (decompressed accordingly
+        ///// to the dictionary's specification) and an optional tag data.
+        ///// </summary>
+        //public IList<WordData> Lookup(StringBuilder word) => lookup.Lookup(word);
+
+        ///// <summary>
+        ///// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
+        ///// followed by a separator. The result is a stem (decompressed accordingly
+        ///// to the dictionary's specification) and an optional tag data.
+        ///// </summary>
+        //public IList<WordData> Lookup(string word) => lookup.Lookup(word);
 
 
         /// <summary>

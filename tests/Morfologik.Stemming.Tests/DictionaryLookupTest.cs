@@ -22,10 +22,10 @@ namespace Morfologik.Stemming
                 ["Barack"] = "George",
                 ["_"] = "xx"
             };
-            assertEquals("ﬁlut", DictionaryLookup.ApplyReplacements("filut", conversion));
-            assertEquals("ﬁzdrygałką", DictionaryLookup.ApplyReplacements("fizdrygałk\\a", conversion));
-            assertEquals("George Bush", DictionaryLookup.ApplyReplacements("Barack Bush", conversion));
-            assertEquals("xxxxxxxx", DictionaryLookup.ApplyReplacements("____", conversion));
+            assertEquals("ﬁlut", DictionaryLookup.ApplyReplacements("filut".AsSpan(), conversion));
+            assertEquals("ﬁzdrygałką", DictionaryLookup.ApplyReplacements("fizdrygałk\\a".AsSpan(), conversion));
+            assertEquals("George Bush", DictionaryLookup.ApplyReplacements("Barack Bush".AsSpan(), conversion));
+            assertEquals("xxxxxxxx", DictionaryLookup.ApplyReplacements("____".AsSpan(), conversion));
         }
 
         /// <summary>
@@ -221,9 +221,12 @@ namespace Morfologik.Stemming
             string dict = "test-synth.dict";
             IStemmer s = new DictionaryLookup(ReadDictionary(dict));
 
-            assertArrayEquals(new String[] { "miała", null }, stem(s,
+            // Morfologik.Stemming: Changed test to reflect that the new API returns
+            // empty sequences instead of null for empty stems and tags.
+
+            assertArrayEquals(new String[] { "miała", string.Empty }, stem(s,
                     "mieć|verb:praet:sg:ter:f:?perf"));
-            assertArrayEquals(new String[] { "a", null }, stem(s, "a|conj"));
+            assertArrayEquals(new String[] { "a", string.Empty }, stem(s, "a|conj"));
             assertArrayEquals(new String[] { }, stem(s, "dziecko|subst:sg:dat:n"));
 
             // This word is not in the dictionary.
@@ -239,7 +242,7 @@ namespace Morfologik.Stemming
             DictionaryLookup s = new DictionaryLookup(ReadDictionary(dict));
 
             /*
-             * Attemp to reconstruct input sequences using WordData iterator.
+             * Attempt to reconstruct input sequences using WordData iterator.
              */
             List<String> sequences = new List<String>();
             foreach (WordData wd in s)
@@ -276,7 +279,7 @@ namespace Morfologik.Stemming
               .Build();
 
             DictionaryLookup s = new DictionaryLookup(new Dictionary(fsa, metadata));
-            assertEquals(0, s.Lookup("l+A").Count);
+            assertEquals(0, s.Lookup("l+A".AsSpan()).Count);
         }
 
         /* */
@@ -290,21 +293,22 @@ namespace Morfologik.Stemming
         }
 
         /* */
-        public static String asString(J2N.Text.ICharSequence s)
+        public static String asString(ReadOnlyMemory<char> value)
         {
-            if (s == null)
-                return null;
-            return s.ToString();
+            // Morfologik.Stemming TODO: We need to check whether we need to make our public API nullable.
+            // But, the old API converted empty sequences to null, so we will do the same for now. 
+            //return value.Length == 0 ? null : value.ToString();
+            return value.ToString();
         }
 
         /* */
         public static String[] stem(IStemmer s, String word)
         {
             List<String> result = new List<String>();
-            foreach (WordData wd in s.Lookup(word))
+            foreach (WordData2 wd in s.Lookup(word.AsSpan()))
             {
-                result.Add(asString(wd.GetStem()));
-                result.Add(asString(wd.GetTag()));
+                result.Add(asString(wd.Stem));
+                result.Add(asString(wd.Tag));
             }
             return result.ToArray();
         }

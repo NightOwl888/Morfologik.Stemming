@@ -255,7 +255,7 @@ namespace Morfologik.Stemming
         public static readonly DictionaryAttribute<Encoding> Encoding = new DictionaryAttribute<Encoding>("fsa.dict.encoding", DictionaryAttribute.Encoding,
             fromString: (string propertyName, string encodingName) =>
             {
-                return System.Text.Encoding.GetEncoding(encodingName);
+                return System.Text.Encoding.GetEncoding(encodingName, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
             });
 
         /// <summary>
@@ -432,10 +432,11 @@ namespace Morfologik.Stemming
                     var twoStrings = stringPair.Trim().Split(' ');
                     if (twoStrings.Length == 2)
                     {
+                        // Morfologik.Stemming TODO: This can be optimized by using TryGetValue() to avoid duplicate lookups.
                         if (!replacementPairs.ContainsKey(twoStrings[0]))
                             replacementPairs[twoStrings[0]] = new List<string> { twoStrings[1] };
                         else
-                            replacementPairs[twoStrings[0]].Add(twoStrings[1]);
+                            replacementPairs[twoStrings[0]]!.Add(twoStrings[1]);
                     }
                     else
                     {
@@ -466,6 +467,7 @@ namespace Morfologik.Stemming
                     {
                         char fromChar = twoChars[0][0];
                         char toChar = twoChars[1][0];
+                        // Morfologik.Stemming TODO: This can be optimized by using TryGetValue() to avoid duplicate lookups.
                         if (!equivalentCharacters.ContainsKey(fromChar))
                         {
                             IList<char> chList = new List<char>();

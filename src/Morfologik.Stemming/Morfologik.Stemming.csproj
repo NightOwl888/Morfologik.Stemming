@@ -17,6 +17,7 @@
   
   <ItemGroup>
     <PackageReference Include="J2N" Version="$(J2NPackageReferenceVersion)" />
+    <PackageReference Include="SpanTools.ValueStringBuilder.Generator" Version="$(SpanToolsValueStringBuilderGeneratorPackageReferenceVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup Condition=" !$(TargetFramework.StartsWith('net4')) ">

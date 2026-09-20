@@ -183,7 +183,7 @@ namespace Morfologik.Stemming
 
         /// <summary>
         /// Return inflected word form data. Usually the parameter passed to
-        /// <see cref="DictionaryLookup.Lookup(ICharSequence)"/>.
+        /// <see cref="DictionaryLookup.Lookup(ReadOnlySpan{char}, DictionaryLookupResult?)"/>.
         /// </summary>
         public ICharSequence? Word => wordCharSequence;
 
