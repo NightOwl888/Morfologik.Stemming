@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 namespace Morfologik.Stemming
@@ -16,7 +17,7 @@ namespace Morfologik.Stemming
     /// </summary>
     public sealed class DictionaryLookup : IStemmer, IEnumerable<WordData>
     {
-        private const int ByteStackBufferSize = 256;
+        private const int CharStackBufferSize = 64;
 
         /// <summary>An FSA used for lookups.</summary>
         private readonly FSATraversal matcher;
@@ -922,11 +923,21 @@ namespace Morfologik.Stemming
 
         public DictionaryLookupResult Lookup(ReadOnlySpan<char> word, DictionaryLookupResult? reuse = default)
         {
-            reuse ??= new DictionaryLookupResult();
+            if (reuse is null)
+            {
+                reuse = new DictionaryLookupResult();
+            }
+            else
+            {
+                reuse.Clear();
+            }
+            reuse.SetDecoder(decoder);
 
             if (dictionaryMetadata.InputConversionPairs.Count > 0)
             {
-                ValueStringBuilder sb = new(stackalloc char[256]);
+                ValueStringBuilder sb = word.Length <= CharStackBufferSize
+                    ? new(stackalloc char[CharStackBufferSize])
+                    : new(word.Length);
                 try
                 {
                     sb.Append(word);
@@ -945,8 +956,6 @@ namespace Morfologik.Stemming
 
         private DictionaryLookupResult LookupCore(ReadOnlySpan<char> word, DictionaryLookupResult result)
         {
-            result.Clear();
-            result.SetDecoder(decoder);
             byte separator = dictionaryMetadata.Separator;
 #pragma warning disable 612, 618
             int prefixBytes = sequenceEncoder.PrefixBytes;
@@ -955,6 +964,7 @@ namespace Morfologik.Stemming
             if (word.IndexOf(separatorChar) > -1)
             {
                 // No valid input can contain the separator.
+                result.Clear();
                 return result;
             }
 
@@ -962,14 +972,13 @@ namespace Morfologik.Stemming
             Span<byte> wordByteBuffer = result.WordBytesBuffer.GetSpan(wordByteBufferLength);
             try
             {
-                if (!encoder.TryGetBytes(word, wordByteBuffer, out int wordByteLength))
-                {
-                    throw new InvalidOperationException("The encoder produced more bytes than its maximum byte count.");
-                }
+                // Allow this to throw - we catch it below and return an empty result.
+                // This is important because silently replacing characters would incorrectly
+                // change the lookup to something else.
+                int wordByteLength = encoder.GetBytes(word, wordByteBuffer);
 
                 // Try to find a partial match in the dictionary.
                 MatchResult match = matcher.Match(matchResult, wordByteBuffer.Slice(0, wordByteLength), rootNode);
-
 
                 if (match.Kind == MatchResult.SequenceIsAPrefix)
                 {
@@ -994,7 +1003,9 @@ namespace Morfologik.Stemming
                         }
                         else
                         {
-                            ValueStringBuilder outputWord = new(stackalloc char[256]);
+                            ValueStringBuilder outputWord = word.Length <= CharStackBufferSize
+                                ? new(stackalloc char[CharStackBufferSize])
+                                : new(word.Length);
                             try
                             {
                                 outputWord.Append(word);
@@ -1037,7 +1048,6 @@ namespace Morfologik.Stemming
                             Span<byte> stemDecodedBuffer = result.StemBytesBuffer.GetSpan(stemByteBufferCount);
 
                             bool success = sequenceEncoder.TryDecode(wordByteBuffer.Slice(0, wordByteLength), ba.Slice(0, encodedLength), stemDecodedBuffer, out int stemByteCount);
-                            Debug.Assert(success, "The stem sequence decoder produced more decoded bytes than its maximum byte count.");
                             if (!success)
                             {
                                 throw new InvalidOperationException("The stem sequence decoder produced more decoded bytes than its maximum byte count.");
