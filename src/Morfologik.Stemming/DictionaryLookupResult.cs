@@ -10,7 +10,7 @@ namespace Morfologik.Stemming
     /// Contains the results of a dictionary lookup in buffer that can be
     /// reused for additional lookup operations.
     /// </summary>
-    public sealed class DictionaryLookupResult : IWordDataStorage, IEnumerable<WordData2>
+    public sealed class DictionaryLookupResult : IWordDataStorage, IEnumerable<WordData>
     {
         private struct Entry
         {
@@ -80,7 +80,7 @@ namespace Morfologik.Stemming
             return new Enumerator(this);
         }
 
-        IEnumerator<WordData2> IEnumerable<WordData2>.GetEnumerator()
+        IEnumerator<WordData> IEnumerable<WordData>.GetEnumerator()
         {
             return GetEnumerator();
         }
@@ -90,20 +90,20 @@ namespace Morfologik.Stemming
             return GetEnumerator();
         }
 
-        public struct Enumerator : IEnumerator<WordData2>
+        public struct Enumerator : IEnumerator<WordData>
         {
             private readonly DictionaryLookupResult result;
-            private readonly WordData2 wordData;
+            private readonly WordData wordData;
             private int index;
 
             internal Enumerator(DictionaryLookupResult result)
             {
                 this.result = result;
-                wordData = new WordData2(result);
+                wordData = new WordData(result);
                 index = -1;
             }
 
-            public WordData2 Current => wordData;
+            public WordData Current => wordData;
 
             object IEnumerator.Current => Current;
 

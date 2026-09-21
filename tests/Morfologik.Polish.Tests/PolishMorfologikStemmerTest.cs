@@ -34,8 +34,8 @@ namespace Morfologik.Stemming.Polish.Tests
             bool hadMissing = false;
             foreach (WordData wd in new PolishStemmer())
             {
-                ICharSequence chs = wd.GetTag();
-                if (chs == null)
+                ReadOnlyMemory<char> chs = wd.Tag;
+                if (chs.IsEmpty)
                 {
                     Console.Error.WriteLine("Missing tag for: " + wd.Word);
                     hadMissing = true;
@@ -60,7 +60,7 @@ namespace Morfologik.Stemming.Polish.Tests
 
             HashSet<String> stems = new HashSet<String>();
             HashSet<String> tags = new HashSet<String>();
-            foreach (WordData2 wd in response)
+            foreach (WordData wd in response)
             {
                 stems.Add(wd.Stem.ToString());
                 tags.Add(wd.Tag.ToString());
@@ -72,7 +72,7 @@ namespace Morfologik.Stemming.Polish.Tests
             assertTrue(tags.Contains("verb:fin:sg:ter:imperf:nonrefl+verb:fin:sg:ter:imperf:refl.nonrefl"));
 
             // Repeat to make sure we get the same values consistently.
-            foreach (WordData2 wd in response)
+            foreach (WordData wd in response)
             {
                 stems.Contains(wd.Stem.ToString());
                 tags.Contains(wd.Tag.ToString());
@@ -84,7 +84,7 @@ namespace Morfologik.Stemming.Polish.Tests
             // Run the same consistency check for the returned buffers.
             //ByteBuffer temp = ByteBuffer.Allocate(100);
             Span<byte> temp = stackalloc byte[100];
-            foreach (WordData2 wd in response)
+            foreach (WordData wd in response)
             {
                 int stemByteCount = wd.StemBytes.Length;
                 // Buffer should be copied.
@@ -107,7 +107,7 @@ namespace Morfologik.Stemming.Polish.Tests
                 //assertEquals(0, copy.CompareTo(temp));
             }
 
-            foreach (WordData2 wd in response)
+            foreach (WordData wd in response)
             {
                 int tagByteCount = wd.TagBytes.Length;
                 // Buffer should be copied.
@@ -133,7 +133,7 @@ namespace Morfologik.Stemming.Polish.Tests
                 //assertEquals(0, copy.CompareTo(temp));
             }
 
-            foreach (WordData2 wd in response)
+            foreach (WordData wd in response)
             {
                 int wordByteCount = wd.WordBytes.Length;
                 // Buffer should be copied.
@@ -163,7 +163,7 @@ namespace Morfologik.Stemming.Polish.Tests
         public static String[] stem(IStemmer s, String word)
         {
             List<String> result = new List<String>();
-            foreach (WordData2 wd in s.Lookup(word.AsSpan()))
+            foreach (WordData wd in s.Lookup(word.AsSpan()))
             {
                 result.Add(asString(wd.Stem));
                 result.Add(asString(wd.Tag));

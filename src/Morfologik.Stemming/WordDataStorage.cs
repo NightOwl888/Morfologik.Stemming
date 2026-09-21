@@ -71,6 +71,15 @@ namespace Morfologik.Stemming
             }
         }
 
+        internal ArrayBufferWriter<byte> WordByteBuffer => wordByteBuffer;
+
+        internal ArrayBufferWriter<char> WordCharBuffer => wordCharBuffer;
+
+        internal ArrayBufferWriter<byte> StemByteBuffer => stemByteBuffer;
+
+        internal ArrayBufferWriter<byte> TagByteBuffer => tagByteBuffer;
+
+
         public ReadOnlyMemory<char> Word => wordCharBuffer.WrittenMemory;
 
         public ReadOnlyMemory<byte> WordBytes => wordByteBuffer.WrittenMemory;

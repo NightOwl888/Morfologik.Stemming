@@ -20,7 +20,7 @@ namespace Morfologik.Stemming.Polish.Tests
             foreach (string t in Regex.Split(input.ToLower(new CultureInfo("pl")), "[\\s\\.\\,]+"))
             {
                 Console.Out.WriteLine("> '" + t + "'");
-                foreach (WordData2 wd in stemmer.Lookup(t.AsSpan(), reuse))
+                foreach (WordData wd in stemmer.Lookup(t.AsSpan(), reuse))
                 {
                     Console.Out.WriteLine(
                         "  - " +

@@ -128,7 +128,7 @@ namespace Morfologik.Stemming
             HashSet<String> entries = new HashSet<String>();
             foreach (WordData wd in s)
             {
-                entries.Add(wd.Word + " " + wd.GetStem() + " " + wd.GetTag());
+                entries.Add(wd.Word + " " + wd.Stem + " " + wd.Tag);
             }
 
             // Make sure a sample of the entries is present.
@@ -166,7 +166,8 @@ namespace Morfologik.Stemming
             List<WordData> words = new List<WordData>();
             foreach (WordData wd in s)
             {
-                WordData clone = (WordData)wd.Clone();
+                //WordData clone = (WordData)wd.Clone();
+                WordData clone = new WordData(wd);
                 words.Add(clone);
             }
 
@@ -176,9 +177,9 @@ namespace Morfologik.Stemming
             foreach (WordData wd in s2)
             {
                 WordData clone = words[i++];
-                assertEquals(clone.GetStem(), wd.GetStem());
-                assertEquals(clone.GetTag(), wd.GetTag());
-                assertEquals(clone.Word, wd.Word);
+                assertTrue(clone.Stem.Span.SequenceEqual(wd.Stem.Span));
+                assertTrue(clone.Tag.Span.SequenceEqual(wd.Tag.Span));
+                assertTrue(clone.Word.Span.SequenceEqual(wd.Word.Span));
             }
 
             // Check collections contract.
@@ -246,10 +247,10 @@ namespace Morfologik.Stemming
             List<String> sequences = new List<String>();
             foreach (WordData wd in s)
             {
-                var stemSequence = wd.GetStem();
-                var tagSequence = wd.GetTag();
-                var stem = stemSequence == null ? "null" : stemSequence.ToString();
-                var tag = tagSequence == null ? "null" : tagSequence.ToString();
+                var stemSequence = wd.Stem;
+                var tagSequence = wd.Tag;
+                var stem = stemSequence.IsEmpty ? "null" : stemSequence.ToString();
+                var tag = tagSequence.IsEmpty ? "null" : tagSequence.ToString();
 
                 sequences.Add($"{wd.Word} {stem} {tag}");
             }
@@ -304,7 +305,7 @@ namespace Morfologik.Stemming
         public static String[] stem(IStemmer s, String word)
         {
             List<String> result = new List<String>();
-            foreach (WordData2 wd in s.Lookup(word.AsSpan()))
+            foreach (WordData wd in s.Lookup(word.AsSpan()))
             {
                 result.Add(asString(wd.Stem));
                 result.Add(asString(wd.Tag));
