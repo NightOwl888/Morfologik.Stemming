@@ -1,8 +1,7 @@
-﻿using J2N.IO;
+﻿using J2N.Text;
 using Morfologik.TestFramework;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -68,19 +67,19 @@ namespace Morfologik.Stemming
             byte[] sourceBytes = Encoding.UTF8.GetBytes(srcString);
             byte[] targetBytes = Encoding.UTF8.GetBytes(dstString);
 
-            ByteBuffer source = ByteBuffer.Wrap(sourceBytes);
-            ByteBuffer target = ByteBuffer.Wrap(targetBytes);
+            ReadOnlySpan<byte> source = sourceBytes;
+            ReadOnlySpan<byte> target = targetBytes;
 
             int maxEncodedByteCount =
                 coder.GetMaxEncodedByteCount(
-                    source.Remaining,
-                    target.Remaining);
+                    source.Length,
+                    target.Length);
 
             byte[] encodedBytes = new byte[maxEncodedByteCount];
 
             if (!coder.TryEncode(
-                source.Array.AsSpan(source.Position, source.Remaining),
-                target.Array.AsSpan(target.Position, target.Remaining),
+                source,
+                target,
                 encodedBytes,
                 out int encodedByteCount))
             {
@@ -90,13 +89,13 @@ namespace Morfologik.Stemming
 
             int maxDecodedByteCount =
                 coder.GetMaxDecodedByteCount(
-                    source.Remaining,
+                    source.Length,
                     encodedByteCount);
 
             byte[] decodedBytes = new byte[maxDecodedByteCount];
 
             if (!coder.TryDecode(
-                source.Array.AsSpan(source.Position, source.Remaining),
+                source,
                 encodedBytes.AsSpan(0, encodedByteCount),
                 decodedBytes,
                 out int decodedByteCount))
@@ -107,8 +106,8 @@ namespace Morfologik.Stemming
 
             if (!decodedBytes.AsSpan(0, decodedByteCount).SequenceEqual(targetBytes))
             {
-                Console.Out.WriteLine("src: " + BufferUtils.ToString(source, Encoding.UTF8));
-                Console.Out.WriteLine("dst: " + BufferUtils.ToString(target, Encoding.UTF8));
+                Console.Out.WriteLine("src: " + Encoding.UTF8.GetString(source));
+                Console.Out.WriteLine("dst: " + Encoding.UTF8.GetString(target));
                 Console.Out.WriteLine(
                     "enc: " + Encoding.UTF8.GetString(encodedBytes, 0, encodedByteCount));
                 Console.Out.WriteLine(
