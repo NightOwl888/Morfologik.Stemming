@@ -1,5 +1,4 @@
-﻿using J2N.IO;
-using J2N.Text;
+﻿using J2N.Text;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,7 +14,7 @@ namespace Morfologik.Stemming
     public sealed class DictionaryEnumerator : IEnumerator<WordData>
     {
         private readonly Encoding decoder;
-        private readonly IEnumerator<ByteBuffer> entriesIter;
+        private readonly IEnumerator<ReadOnlyMemory<byte>> entriesIter;
         private readonly WordData entry;
         private readonly byte separator;
         private readonly bool decodeStems;
@@ -65,13 +64,13 @@ namespace Morfologik.Stemming
 
         private WordData Next()
         {
-            ByteBuffer entryBuffer = entriesIter.Current;
+            ReadOnlyMemory<byte> entryBuffer = entriesIter.Current;
 
             /*
              * Entries are typically: inflected<SEP>codedBase<SEP>tag so try to find this split.
              */
-            byte[] ba = entryBuffer.Array;
-            int bbSize = entryBuffer.Remaining;
+            ReadOnlySpan<byte> ba = entryBuffer.Span;
+            int bbSize = entryBuffer.Length;
 
             int sepPos;
             for (sepPos = 0; sepPos < bbSize; sepPos++)
@@ -92,7 +91,7 @@ namespace Morfologik.Stemming
 
             ArrayBufferWriter<byte> inflectedBuffer = wordDataStorage.WordByteBuffer;
             Span<byte> inflectedWordBytes = inflectedBuffer.GetSpan(sepPos);
-            ba.AsSpan(0, sepPos).CopyTo(inflectedWordBytes);
+            ba.Slice(0, sepPos).CopyTo(inflectedWordBytes);
             inflectedBuffer.Advance(sepPos);
 
             ArrayBufferWriter<char> inflectedCharBuffer = wordDataStorage.WordCharBuffer;
@@ -133,7 +132,7 @@ namespace Morfologik.Stemming
 
                 if (!sequenceEncoder.TryDecode(
                     inflectedBuffer.WrittenSpan,
-                    ba.AsSpan(encodedStart, encodedStemLength),
+                    ba.Slice(encodedStart, encodedStemLength),
                     stemDecodedBytes,
                     out int stemBytesWritten))
                 {
@@ -146,7 +145,7 @@ namespace Morfologik.Stemming
             else
             {
                 int encodedStemLength = stemEnd - encodedStart;
-                ba.AsSpan(encodedStart, encodedStemLength).CopyTo(
+                ba.Slice(encodedStart, encodedStemLength).CopyTo(
                     stemBuffer.GetSpan(encodedStemLength));
 
                 stemBuffer.Advance(encodedStemLength);
@@ -158,7 +157,7 @@ namespace Morfologik.Stemming
             int tagStart = stemEnd < bbSize ? stemEnd + 1 : bbSize;
             int tagLength = bbSize - tagStart;
 
-            ba.AsSpan(tagStart, tagLength).CopyTo(tagBuffer.GetSpan(tagLength));
+            ba.Slice(tagStart, tagLength).CopyTo(tagBuffer.GetSpan(tagLength));
             tagBuffer.Advance(tagLength);
 
             return entry;

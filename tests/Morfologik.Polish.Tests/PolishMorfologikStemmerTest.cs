@@ -1,10 +1,10 @@
-﻿using J2N.IO;
-using J2N.Text;
+﻿using J2N.Text;
 using Morfologik.TestFramework;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using JCG = J2N.Collections.Generic;
 
 namespace Morfologik.Stemming.Polish.Tests
 {
@@ -30,7 +30,9 @@ namespace Morfologik.Stemming.Polish.Tests
         [Test]
         public void ListUniqueTags()
         {
-            HashSet<String> forms = new HashSet<String>(StringComparer.Ordinal);
+            JCG.HashSet<string> forms = new JCG.HashSet<string>(StringComparer.Ordinal);
+            var formsLookup = forms.GetSpanAlternateLookup<char>();
+
             bool hadMissing = false;
             foreach (WordData wd in new PolishStemmer())
             {
@@ -41,7 +43,7 @@ namespace Morfologik.Stemming.Polish.Tests
                     hadMissing = true;
                     continue;
                 }
-                forms.Add(chs.ToString());
+                formsLookup.Add(chs.Span);
             }
 
             //Assertions.assertThat(hadMissing).isFalse();

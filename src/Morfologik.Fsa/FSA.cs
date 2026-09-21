@@ -13,7 +13,7 @@ namespace Morfologik.Fsa
     /// Construction of Finite-State Automata and Transducers, and Their Use in the
     /// Natural Language Processing</i> (PhD thesis, Technical University of Gdansk).
     /// </summary>
-    public abstract class FSA : IEnumerable<ByteBuffer>
+    public abstract class FSA : IEnumerable<ReadOnlyMemory<byte>>
     {
         /// <summary>
         /// Returns the identifier of the root node of this automaton. Returns
@@ -148,7 +148,7 @@ namespace Morfologik.Fsa
         /// state (node) and ending in final nodes. This corresponds to a set of
         /// suffixes of a given prefix from all sequences stored in the automaton.
         /// <para/>
-        /// The element of the returned enumerable is a <see cref="ByteBuffer"/> whose contents changes on
+        /// The element of the returned enumerable is a <see cref="ReadOnlyMemory{Byte}"/> whose contents changes on
         /// each call to <see cref="IEnumerator.MoveNext()"/>. To keep the contents between calls
         /// to <see cref="IEnumerator.MoveNext()"/>, one must copy the buffer to some other
         /// location.
@@ -159,15 +159,15 @@ namespace Morfologik.Fsa
         /// </summary>
         /// <param name="node">Identifier of the starting node from which to return subsequences.</param>
         /// <returns>An <see cref="IEnumerable{ByteBuffer}"/> over all sequences encoded starting at the given node.</returns>
-        public virtual IEnumerable<ByteBuffer> GetSequences(int node)
+        public virtual IEnumerable<ReadOnlyMemory<byte>> GetSequences(int node)
         {
             if (node == 0)
-                return new ByteBuffer[0];
+                return Array.Empty<ReadOnlyMemory<byte>>();
 
             return new ByteSequenceEnumerable(this, node);
         }
 
-        private class ByteSequenceEnumerable : IEnumerable<ByteBuffer>
+        private class ByteSequenceEnumerable : IEnumerable<ReadOnlyMemory<byte>>
         {
             private readonly FSA fsa;
             private readonly int node;
@@ -177,7 +177,7 @@ namespace Morfologik.Fsa
                 this.node = node;
             }
 
-            public IEnumerator<ByteBuffer> GetEnumerator()
+            public IEnumerator<ReadOnlyMemory<byte>> GetEnumerator()
             {
                 return new ByteSequenceEnumerator(this.fsa, node);
             }
@@ -190,7 +190,7 @@ namespace Morfologik.Fsa
         /// <see cref="IEnumerable"/>.
         /// </summary>
         /// <returns>Returns all sequences encoded in the automaton.</returns>
-        public IEnumerable<ByteBuffer> GetSequences()
+        public IEnumerable<ReadOnlyMemory<byte>> GetSequences()
         {
             return GetSequences(GetRootNode());
         }
@@ -206,7 +206,7 @@ namespace Morfologik.Fsa
         /// by a byte array and that the content of the byte buffer starts at the
         /// array's index 0.
         /// </summary>
-        public IEnumerator<ByteBuffer> GetEnumerator()
+        public IEnumerator<ReadOnlyMemory<byte>> GetEnumerator()
         {
             return GetSequences().GetEnumerator();
         }

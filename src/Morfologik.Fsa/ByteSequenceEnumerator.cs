@@ -6,10 +6,15 @@ using System.Collections.Generic;
 namespace Morfologik.Fsa
 {
     /// <summary>
-    /// An iterator that traverses the right language of a given node (all sequences
+    /// An enumerator that traverses the right language of a given node (all sequences
     /// reachable from a given node).
     /// </summary>
-    public sealed class ByteSequenceEnumerator : IEnumerator<ByteBuffer>
+    /// <remarks>
+    /// The returned memory is backed by a buffer reused by the enumerator. Its contents
+    /// may change after a subsequent call to <see cref="IEnumerator.MoveNext"/>.
+    /// Copy the contents if the sequence needs to be retained.
+    /// </remarks>
+    public sealed class ByteSequenceEnumerator : IEnumerator<ReadOnlyMemory<byte>>
     {
         /// <summary>
         /// Default expected depth of the recursion stack (estimated longest sequence
@@ -20,17 +25,11 @@ namespace Morfologik.Fsa
         /// <summary>The FSA to which this iterator belongs.</summary>
         private readonly FSA fsa;
 
-        /// <summary>An internal cache for the next element in the FSA</summary>
-        private ByteBuffer? nextElement;
-
         /// <summary>
         /// A buffer for the current sequence of bytes from the current node to the
         /// root.
         /// </summary>
         private byte[] buffer = new byte[ExpectedMaxStates];
-
-        /// <summary>Reusable byte buffer wrapper around <see cref="buffer"/>.</summary>
-        private ByteBuffer bufferWrapper;
 
         /// <summary>An arc stack for DFS when processing the automaton.</summary>
         private int[] arcs = new int[ExpectedMaxStates];
@@ -38,18 +37,17 @@ namespace Morfologik.Fsa
         /// <summary>Current processing depth in <see cref="arcs"/>.</summary>
         private int position;
 
-        private ByteBuffer? current;
+        private ReadOnlyMemory<byte> current;
 
         /// <summary>
-        /// Gets a <see cref="ByteBuffer"/> with the sequence corresponding to the
-        /// next final state in the automaton.
+        /// Gets the current byte sequence.
         /// </summary>
-        public ByteBuffer Current => current!;
+        /// <remarks>
+        /// The returned memory is backed by storage reused by this enumerator and may be
+        /// overwritten by the next call to <see cref="MoveNext"/>.
+        /// </remarks>
+        public ReadOnlyMemory<byte> Current => current!;
 
-        /// <summary>
-        /// Gets a <see cref="ByteBuffer"/> with the sequence corresponding to the
-        /// next final state in the automaton.
-        /// </summary>
         object? IEnumerator.Current => current;
 
         /// <summary>
@@ -67,7 +65,6 @@ namespace Morfologik.Fsa
         /// <param name="node">The starting node's identifier (can be the <see cref="FSA.GetRootNode()"/>.</param>
         public ByteSequenceEnumerator(FSA fsa, int node)
         {
-            this.bufferWrapper = ByteBuffer.Wrap(buffer);
             this.fsa = fsa;
 
             if (fsa.GetFirstArc(node) != 0)
@@ -84,96 +81,10 @@ namespace Morfologik.Fsa
         public ByteSequenceEnumerator RestartFrom(int node)
         {
             position = 0;
-            bufferWrapper.Clear();
-            nextElement = null;
-            current = null;
+            current = default;
 
             PushNode(node);
             return this;
-        }
-
-        /// <summary>
-        /// Returns <c>true</c> if there are still elements in this enumerator.
-        /// </summary>
-        private bool HasNext()
-        {
-            if (nextElement == null)
-            {
-                nextElement = Advance();
-            }
-
-            return nextElement != null;
-        }
-
-        /// <summary>
-        /// Returns a <see cref="ByteBuffer"/> with the sequence corresponding to the
-        /// next final state in the automaton.
-        /// </summary>
-        /// <returns></returns>
-        private ByteBuffer? Next()
-        {
-            if (nextElement != null)
-            {
-                ByteBuffer cache = nextElement;
-                nextElement = null;
-                return cache;
-            }
-            else
-            {
-                return Advance();
-            }
-        }
-
-        /// <summary>
-        /// Advances to the next available final state.
-        /// </summary>
-        private ByteBuffer? Advance()
-        {
-            if (position == 0)
-            {
-                return null;
-            }
-
-            while (position > 0)
-            {
-                int lastIndex = position - 1;
-                int arc = arcs[lastIndex];
-
-                if (arc == 0)
-                {
-                    // Remove the current node from the queue.
-                    position--;
-                    continue;
-                }
-
-                // Go to the next arc, but leave it on the stack
-                // so that we keep the recursion depth level accurate.
-                arcs[lastIndex] = fsa.GetNextArc(arc);
-
-                // Expand buffer if needed.
-                int bufferLength = this.buffer.Length;
-                if (lastIndex >= bufferLength)
-                {
-                    Array.Resize(ref buffer, bufferLength + ExpectedMaxStates);
-                    this.bufferWrapper = ByteBuffer.Wrap(buffer);
-                }
-                buffer[lastIndex] = fsa.GetArcLabel(arc);
-
-                if (!fsa.IsArcTerminal(arc))
-                {
-                    // Recursively descend into the arc's node.
-                    PushNode(fsa.GetEndNode(arc));
-                }
-
-                if (fsa.IsArcFinal(arc))
-                {
-                    bufferWrapper.Clear();
-                    bufferWrapper.Limit = (lastIndex + 1);
-                    return bufferWrapper;
-                }
-            }
-
-            return null;
         }
 
         // .NET doesn't support Remove()
@@ -197,10 +108,41 @@ namespace Morfologik.Fsa
         /// </summary>
         public bool MoveNext()
         {
-            if (!HasNext())
+            if (position == 0)
                 return false;
-            current = Next();
-            return current != null;
+
+            while (position > 0)
+            {
+                int lastIndex = position - 1;
+                int arc = arcs[lastIndex];
+
+                if (arc == 0)
+                {
+                    position--;
+                    continue;
+                }
+
+                arcs[lastIndex] = fsa.GetNextArc(arc);
+
+                int bufferLength = buffer.Length;
+                if (lastIndex >= bufferLength)
+                {
+                    Array.Resize(ref buffer, bufferLength + ExpectedMaxStates);
+                }
+
+                buffer[lastIndex] = fsa.GetArcLabel(arc);
+
+                if (!fsa.IsArcTerminal(arc))
+                    PushNode(fsa.GetEndNode(arc));
+
+                if (fsa.IsArcFinal(arc))
+                {
+                    current = buffer.AsMemory(0, lastIndex + 1);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -217,9 +159,7 @@ namespace Morfologik.Fsa
         public void Dispose()
         {
             position = 0;
-            bufferWrapper.Clear();
-            nextElement = null;
-            current = null!;
+            current = default;
         }
     }
 }

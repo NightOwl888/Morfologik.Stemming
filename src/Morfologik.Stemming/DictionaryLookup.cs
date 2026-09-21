@@ -1,9 +1,7 @@
-﻿using J2N.IO;
-using J2N.Text;
+﻿using J2N.Text;
 using Morfologik.Fsa;
 using Morfologik.Stemming.Support;
 using System;
-using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1012,9 +1010,9 @@ namespace Morfologik.Stemming
                         finalStatesIterator.RestartFrom(fsa.GetEndNode(arc));
                         while (finalStatesIterator.MoveNext())
                         {
-                            ByteBuffer bb = finalStatesIterator.Current;
-                            byte[] ba = bb.Array;
-                            int bbSize = bb.Remaining;
+                            ReadOnlyMemory<byte> bb = finalStatesIterator.Current;
+                            ReadOnlySpan<byte> ba = bb.Span;
+                            int bbSize = ba.Length;
 
                             /*
                             * Find the separator byte's position splitting the inflection instructions
@@ -1038,7 +1036,7 @@ namespace Morfologik.Stemming
                             int stemByteOffset = result.StemBytesBuffer.WrittenCount;
                             Span<byte> stemDecodedBuffer = result.StemBytesBuffer.GetSpan(stemByteBufferCount);
 
-                            bool success = sequenceEncoder.TryDecode(wordByteBuffer.Slice(0, wordByteLength), ba.AsSpan(0, encodedLength), stemDecodedBuffer, out int stemByteCount);
+                            bool success = sequenceEncoder.TryDecode(wordByteBuffer.Slice(0, wordByteLength), ba.Slice(0, encodedLength), stemDecodedBuffer, out int stemByteCount);
                             Debug.Assert(success, "The stem sequence decoder produced more decoded bytes than its maximum byte count.");
                             if (!success)
                             {
@@ -1059,7 +1057,7 @@ namespace Morfologik.Stemming
                             if (tagSize > 0)
                             {
                                 Span<byte> tagByteDestination = result.TagBytesBuffer.GetSpan(tagSize);
-                                ba.AsSpan(sepPos, tagSize).CopyTo(tagByteDestination);
+                                ba.Slice(sepPos, tagSize).CopyTo(tagByteDestination);
                                 result.TagBytesBuffer.Advance(tagSize);
                             }
 
