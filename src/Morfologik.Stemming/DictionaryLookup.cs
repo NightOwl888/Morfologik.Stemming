@@ -959,20 +959,18 @@ namespace Morfologik.Stemming
                 return result;
             }
 
-            int byteBufferLength = encoder.GetMaxByteCount(word.Length);
-            byte[]? arrayToReturnToPool = null;
-            Span<byte> byteBuffer = byteBufferLength <= ByteStackBufferSize
-                ? stackalloc byte[byteBufferLength]
-                : (arrayToReturnToPool = ArrayPool<byte>.Shared.Rent(byteBufferLength));
+            int wordByteBufferLength = encoder.GetMaxByteCount(word.Length);
+            Span<byte> wordByteBuffer = result.WordBytesBuffer.GetSpan(wordByteBufferLength);
             try
             {
-                if (!encoder.TryGetBytes(word, byteBuffer, out int byteLength))
+                if (!encoder.TryGetBytes(word, wordByteBuffer, out int wordByteLength))
                 {
                     throw new InvalidOperationException("The encoder produced more bytes than its maximum byte count.");
                 }
 
                 // Try to find a partial match in the dictionary.
-                MatchResult match = matcher.Match(matchResult, byteBuffer.Slice(0, byteLength), rootNode);
+                MatchResult match = matcher.Match(matchResult, wordByteBuffer.Slice(0, wordByteLength), rootNode);
+
 
                 if (match.Kind == MatchResult.SequenceIsAPrefix)
                 {
@@ -1035,65 +1033,67 @@ namespace Morfologik.Stemming
                             * Decode the stem into the stem buffer.
                             */
                             int encodedLength = sepPos;
-                            int maxDecodedByteCount = sequenceEncoder.GetMaxDecodedByteCount(byteLength, encodedLength);
+                            int stemByteBufferCount = sequenceEncoder.GetMaxDecodedByteCount(wordByteLength, encodedLength);
+                            int stemByteOffset = result.StemBytesBuffer.WrittenCount;
+                            Span<byte> stemDecodedBuffer = result.StemBytesBuffer.GetSpan(stemByteBufferCount);
 
-                            byte[]? decodedArrayToReturnToPool = null;
-                            //Span<byte> decodedBuffer = maxDecodedByteCount <= ByteStackBufferSize
-                            //    ? stackalloc byte[maxDecodedByteCount]
-                            //    : (decodedArrayToReturnToPool = ArrayPool<byte>.Shared.Rent(maxDecodedByteCount));
-                            Span<byte> decodedBuffer = (decodedArrayToReturnToPool = ArrayPool<byte>.Shared.Rent(maxDecodedByteCount));
-                            try
+                            bool success = sequenceEncoder.TryDecode(wordByteBuffer.Slice(0, wordByteLength), ba.AsSpan(0, encodedLength), stemDecodedBuffer, out int stemByteCount);
+                            Debug.Assert(success, "The stem sequence decoder produced more decoded bytes than its maximum byte count.");
+                            if (!success)
                             {
-                                bool success = sequenceEncoder.TryDecode(byteBuffer.Slice(0, byteLength), ba.AsSpan(0, encodedLength), decodedBuffer, out int decodedByteLength);
-                                Debug.Assert(success, "The stem sequence decoder produced more decoded bytes than its maximum byte count.");
-                                if (!success)
-                                {
-                                    throw new InvalidOperationException("The stem sequence decoder produced more decoded bytes than its maximum byte count.");
-                                }
-
-                                int maxStemCharCount = decoder.GetMaxCharCount(decodedByteLength);
-                                int stemOffset = result.StemBuffer.WrittenCount;
-
-                                Span<char> stemDestination = result.StemBuffer.GetSpan(maxStemCharCount);
-                                int stemCharCount = decoder.GetChars(decodedBuffer.Slice(0, decodedByteLength), stemDestination);
-
-                                result.StemBuffer.Advance(stemCharCount);
-
-                                // Skip separator character.
-                                sepPos++;
-
-                                /*
-                                * Decode the tag data.
-                                */
-                                int tagSize = bbSize - sepPos;
-                                int tagOffset = result.TagBuffer.WrittenCount;
-                                int tagCharCount = 0;
-
-                                if (tagSize > 0)
-                                {
-                                    int maxTagCharCount = decoder.GetMaxCharCount(tagSize);
-
-                                    Span<char> tagDestination = result.TagBuffer.GetSpan(maxTagCharCount);
-                                    tagCharCount = decoder.GetChars(ba.AsSpan(sepPos, tagSize), tagDestination);
-
-                                    result.TagBuffer.Advance(tagCharCount);
-                                }
-
-                                result.AddEntry(
-                                    stemOffset,
-                                    stemCharCount,
-                                    tagOffset,
-                                    tagCharCount);
+                                throw new InvalidOperationException("The stem sequence decoder produced more decoded bytes than its maximum byte count.");
                             }
-                            finally
+                            result.StemBytesBuffer.Advance(stemByteCount);
+
+
+                            int stemCharBufferCount = decoder.GetMaxCharCount(stemByteCount);
+                            int stemCharOffset = result.StemCharsBuffer.WrittenCount;
+
+                            Span<char> stemDestination = result.StemCharsBuffer.GetSpan(stemCharBufferCount);
+                            int stemCharCount = decoder.GetChars(stemDecodedBuffer.Slice(0, stemByteCount), stemDestination);
+
+                            result.StemCharsBuffer.Advance(stemCharCount);
+
+                            // Skip separator character.
+                            sepPos++;
+
+                            /*
+                            * Decode the tag data.
+                            */
+                            int tagSize = bbSize - sepPos;
+                            int tagByteOffset = result.TagBytesBuffer.WrittenCount;
+                            int tagByteCount = tagSize;
+                            int tagCharOffset = result.TagCharsBuffer.WrittenCount;
+                            int tagCharCount = 0;
+
+                            if (tagSize > 0)
                             {
-                                if (decodedArrayToReturnToPool is not null)
-                                    ArrayPool<byte>.Shared.Return(decodedArrayToReturnToPool, clearArray: true);
+                                Span<byte> tagByteDestination = result.TagBytesBuffer.GetSpan(tagSize);
+                                ba.AsSpan(sepPos, tagSize).CopyTo(tagByteDestination);
+                                result.TagBytesBuffer.Advance(tagSize);
+
+                                int maxTagCharCount = decoder.GetMaxCharCount(tagSize);
+
+                                Span<char> tagDestination = result.TagCharsBuffer.GetSpan(maxTagCharCount);
+                                tagCharCount = decoder.GetChars(ba.AsSpan(sepPos, tagSize), tagDestination);
+
+                                result.TagCharsBuffer.Advance(tagCharCount);
                             }
+
+                            result.AddEntry(
+                                stemCharOffset,
+                                stemCharCount,
+                                tagCharOffset,
+                                tagCharCount,
+                                stemByteOffset,
+                                stemByteCount,
+                                tagByteOffset,
+                                tagByteCount);
                         }
-                    }
-                }
 
+                    }
+
+                }
                 return result;
             }
             catch (EncoderFallbackException)
@@ -1103,12 +1103,173 @@ namespace Morfologik.Stemming
                 result.Clear();
                 return result;
             }
-            finally
-            {
-                if (arrayToReturnToPool is not null)
-                    ArrayPool<byte>.Shared.Return(arrayToReturnToPool, clearArray: true);
-            }
         }
+
+
+        //        private DictionaryLookupResult LookupCore(ReadOnlySpan<char> word, DictionaryLookupResult result)
+        //        {
+        //            result.Clear();
+        //            byte separator = dictionaryMetadata.Separator;
+        //#pragma warning disable 612, 618
+        //            int prefixBytes = sequenceEncoder.PrefixBytes;
+        //#pragma warning restore 612, 618
+
+        //            if (word.IndexOf(separatorChar) > -1)
+        //            {
+        //                // No valid input can contain the separator.
+        //                return result;
+        //            }
+
+        //            int byteBufferLength = encoder.GetMaxByteCount(word.Length);
+        //            byte[]? arrayToReturnToPool = null;
+        //            Span<byte> byteBuffer = byteBufferLength <= ByteStackBufferSize
+        //                ? stackalloc byte[byteBufferLength]
+        //                : (arrayToReturnToPool = ArrayPool<byte>.Shared.Rent(byteBufferLength));
+        //            try
+        //            {
+        //                if (!encoder.TryGetBytes(word, byteBuffer, out int byteLength))
+        //                {
+        //                    throw new InvalidOperationException("The encoder produced more bytes than its maximum byte count.");
+        //                }
+
+        //                // Try to find a partial match in the dictionary.
+        //                MatchResult match = matcher.Match(matchResult, byteBuffer.Slice(0, byteLength), rootNode);
+
+        //                if (match.Kind == MatchResult.SequenceIsAPrefix)
+        //                {
+        //                    /*
+        //                     * The entire sequence exists in the dictionary. A separator should
+        //                     * be the next symbol.
+        //                     */
+        //                    int arc = fsa.GetArc(match.Node, separator);
+
+        //                    /*
+        //                     * The situation when the arc points to a final node should NEVER
+        //                     * happen. After all, we want the word to have SOME base form.
+        //                     */
+        //                    if (arc != 0 && !fsa.IsArcFinal(arc))
+        //                    {
+        //                        // There is such a word in the dictionary. Return its base forms.
+        //                        //int formsCount = 0;
+
+        //                        if (dictionaryMetadata.OutputConversionPairs.Count == 0)
+        //                        {
+        //                            result.SetWord(word);
+        //                        }
+        //                        else
+        //                        {
+        //                            ValueStringBuilder outputWord = new(stackalloc char[256]);
+        //                            try
+        //                            {
+        //                                outputWord.Append(word);
+        //                                ApplyReplacements(ref outputWord, dictionaryMetadata.OutputConversionPairs);
+        //                                result.SetWord(outputWord.AsSpan());
+        //                            }
+        //                            finally
+        //                            {
+        //                                outputWord.Dispose();
+        //                            }
+        //                        }
+
+        //                        finalStatesIterator.RestartFrom(fsa.GetEndNode(arc));
+        //                        while (finalStatesIterator.MoveNext())
+        //                        {
+        //                            ByteBuffer bb = finalStatesIterator.Current;
+        //                            byte[] ba = bb.Array;
+        //                            int bbSize = bb.Remaining;
+
+        //                            /*
+        //                            * Find the separator byte's position splitting the inflection instructions
+        //                            * from the tag.
+        //                            */
+        //                            Debug.Assert(prefixBytes <= bbSize, sequenceEncoder.GetType() + " >? " + bbSize);
+        //                            int sepPos;
+        //                            for (sepPos = prefixBytes; sepPos < bbSize; sepPos++)
+        //                            {
+        //                                if (ba[sepPos] == separator)
+        //                                {
+        //                                    break;
+        //                                }
+        //                            }
+
+        //                            /*
+        //                            * Decode the stem into the stem buffer.
+        //                            */
+        //                            int encodedLength = sepPos;
+        //                            int maxDecodedByteCount = sequenceEncoder.GetMaxDecodedByteCount(byteLength, encodedLength);
+
+        //                            byte[]? decodedArrayToReturnToPool = null;
+        //                            //Span<byte> decodedBuffer = maxDecodedByteCount <= ByteStackBufferSize
+        //                            //    ? stackalloc byte[maxDecodedByteCount]
+        //                            //    : (decodedArrayToReturnToPool = ArrayPool<byte>.Shared.Rent(maxDecodedByteCount));
+        //                            Span<byte> decodedBuffer = (decodedArrayToReturnToPool = ArrayPool<byte>.Shared.Rent(maxDecodedByteCount));
+        //                            try
+        //                            {
+        //                                bool success = sequenceEncoder.TryDecode(byteBuffer.Slice(0, byteLength), ba.AsSpan(0, encodedLength), decodedBuffer, out int decodedByteLength);
+        //                                Debug.Assert(success, "The stem sequence decoder produced more decoded bytes than its maximum byte count.");
+        //                                if (!success)
+        //                                {
+        //                                    throw new InvalidOperationException("The stem sequence decoder produced more decoded bytes than its maximum byte count.");
+        //                                }
+
+        //                                int maxStemCharCount = decoder.GetMaxCharCount(decodedByteLength);
+        //                                int stemOffset = result.StemCharsBuffer.WrittenCount;
+
+        //                                Span<char> stemDestination = result.StemCharsBuffer.GetSpan(maxStemCharCount);
+        //                                int stemCharCount = decoder.GetChars(decodedBuffer.Slice(0, decodedByteLength), stemDestination);
+
+        //                                result.StemCharsBuffer.Advance(stemCharCount);
+
+        //                                // Skip separator character.
+        //                                sepPos++;
+
+        //                                /*
+        //                                * Decode the tag data.
+        //                                */
+        //                                int tagSize = bbSize - sepPos;
+        //                                int tagOffset = result.TagCharsBuffer.WrittenCount;
+        //                                int tagCharCount = 0;
+
+        //                                if (tagSize > 0)
+        //                                {
+        //                                    int maxTagCharCount = decoder.GetMaxCharCount(tagSize);
+
+        //                                    Span<char> tagDestination = result.TagCharsBuffer.GetSpan(maxTagCharCount);
+        //                                    tagCharCount = decoder.GetChars(ba.AsSpan(sepPos, tagSize), tagDestination);
+
+        //                                    result.TagCharsBuffer.Advance(tagCharCount);
+        //                                }
+
+        //                                result.AddEntry(
+        //                                    stemOffset,
+        //                                    stemCharCount,
+        //                                    tagOffset,
+        //                                    tagCharCount);
+        //                            }
+        //                            finally
+        //                            {
+        //                                if (decodedArrayToReturnToPool is not null)
+        //                                    ArrayPool<byte>.Shared.Return(decodedArrayToReturnToPool, clearArray: true);
+        //                            }
+        //                        }
+        //                    }
+        //                }
+
+        //                return result;
+        //            }
+        //            catch (EncoderFallbackException)
+        //            {
+        //                // This should be a rare occurrence, but if it happens it means there is no way
+        //                // the dictionary can contain the input word.
+        //                result.Clear();
+        //                return result;
+        //            }
+        //            finally
+        //            {
+        //                if (arrayToReturnToPool is not null)
+        //                    ArrayPool<byte>.Shared.Return(arrayToReturnToPool, clearArray: true);
+        //            }
+        //        }
 
         /// <summary>
         /// Apply partial string replacements from a given dictionary.

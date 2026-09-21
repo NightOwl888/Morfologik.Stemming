@@ -81,44 +81,74 @@ namespace Morfologik.Stemming.Polish.Tests
             //String ENCODING = "UTF-8";
             Encoding ENCODING = Encoding.UTF8;
 
-            // Morfologik.Stemming TODO: Need to analyze whether we should still support getting bytes from WordData.
-            // If so, we need to implement GetStemBytes, GetTagBytes, and GetWordBytes in WordData2 and PolishStemmer.
             // Run the same consistency check for the returned buffers.
             //ByteBuffer temp = ByteBuffer.Allocate(100);
-            //foreach (WordData2 wd in response)
-            //{
-            //    // Buffer should be copied.
-            //    ByteBuffer copy = wd.GetStemBytes(null);
-            //    String stem = ENCODING.GetString(copy.Array, copy.ArrayOffset + copy.Position, copy.Remaining);
-            //    // The buffer should be present in stems set.
-            //    assertTrue(stem, stems.Contains(stem));
-            //    // Buffer large enough to hold the contents.
-            //    assertSame(temp, wd.GetStemBytes(temp));
-            //    // The copy and the clone should be identical.
-            //    assertEquals(0, copy.CompareTo(temp));
-            //}
+            Span<byte> temp = stackalloc byte[100];
+            foreach (WordData2 wd in response)
+            {
+                int stemByteCount = wd.StemBytes.Length;
+                // Buffer should be copied.
+                assertTrue(wd.StemBytes.Span.TryCopyTo(temp));
+                string stem = ENCODING.GetString(temp.Slice(0, stemByteCount));
+                // The buffer should be present in stems set.
+                assertTrue(stem, stems.Contains(stem));
+                // Morfologik.Stemming: We are copying memory from the internal buffer
+                // to an external buffer. We don't have a reference, so
+                // we have nothing to compare.
 
-            //foreach (WordData2 wd in response)
-            //{
-            //    // Buffer should be copied.
-            //    ByteBuffer copy = wd.GetTagBytes(null);
-            //    String tag = ENCODING.GetString(copy.Array, copy.ArrayOffset + copy.Position, copy.Remaining);
-            //    // The buffer should be present in tags set.
-            //    assertTrue(tag, tags.Contains(tag));
-            //    // Buffer large enough to hold the contents.
-            //    temp.Clear();
-            //    assertSame(temp, wd.GetTagBytes(temp));
-            //    // The copy and the clone should be identical.
-            //    assertEquals(0, copy.CompareTo(temp));
-            //}
+                //// Buffer should be copied.
+                //ByteBuffer copy = wd.GetStemBytes(null);
+                //String stem = ENCODING.GetString(copy.Array, copy.ArrayOffset + copy.Position, copy.Remaining);
+                //// The buffer should be present in stems set.
+                //assertTrue(stem, stems.Contains(stem));
+                //// Buffer large enough to hold the contents.
+                //assertSame(temp, wd.GetStemBytes(temp));
+                //// The copy and the clone should be identical.
+                //assertEquals(0, copy.CompareTo(temp));
+            }
 
-            //foreach (WordData wd in response)
-            //{
-            //    // Buffer should be copied.
-            //    ByteBuffer copy = wd.GetWordBytes(null);
-            //    assertNotNull(copy);
-            //    assertEquals(0, copy.CompareTo(ByteBuffer.Wrap(ENCODING.GetBytes(word))));
-            //}
+            foreach (WordData2 wd in response)
+            {
+                int tagByteCount = wd.TagBytes.Length;
+                // Buffer should be copied.
+                assertTrue(wd.TagBytes.Span.TryCopyTo(temp));
+                // Buffer large enough to hold the contents.
+                assertEquals(tagByteCount, tagByteCount);
+                string tag = ENCODING.GetString(temp.Slice(0, tagByteCount));
+                // The buffer should be present in tags set.
+                assertTrue(tag, tags.Contains(tag));
+                // Morfologik.Stemming: We are copying memory from the internal buffer
+                // to an external buffer. We don't have a reference, so
+                // we have nothing to compare.
+
+                //// Buffer should be copied.
+                //ByteBuffer copy = wd.GetTagBytes(null);
+                //String tag = ENCODING.GetString(copy.Array, copy.ArrayOffset + copy.Position, copy.Remaining);
+                //// The buffer should be present in tags set.
+                //assertTrue(tag, tags.Contains(tag));
+                //// Buffer large enough to hold the contents.
+                //temp.Clear();
+                //assertSame(temp, wd.GetTagBytes(temp));
+                //// The copy and the clone should be identical.
+                //assertEquals(0, copy.CompareTo(temp));
+            }
+
+            foreach (WordData2 wd in response)
+            {
+                int wordByteCount = wd.WordBytes.Length;
+                // Buffer should be copied.
+                assertTrue(wd.WordBytes.Span.TryCopyTo(temp));
+                // Buffer large enough to hold the contents.
+                assertEquals(wordByteCount, wordByteCount);
+                // Morfologik.Stemming: We are copying memory from the internal buffer
+                // to an external buffer. We don't have a reference, so
+                // we have nothing to compare.
+
+                //// Buffer should be copied.
+                //ByteBuffer copy = wd.GetWordBytes(null);
+                //assertNotNull(copy);
+                //assertEquals(0, copy.CompareTo(ByteBuffer.Wrap(ENCODING.GetBytes(word))));
+            }
         }
 
         /* */

@@ -8,27 +8,53 @@ namespace Morfologik.Stemming
     /// Contains the results of a dictionary lookup in buffer that can be
     /// reused for additional lookup operations.
     /// </summary>
-    public sealed class DictionaryLookupResult : IEnumerable<WordData2>
+    public sealed class DictionaryLookupResult : IWordDataStorage, IEnumerable<WordData2>
     {
         private struct Entry
         {
-            public int StemOffset;
-            public int StemLength;
-            public int TagOffset;
-            public int TagLength;
+            public int StemCharsOffset;
+            public int StemCharsLength;
+            public int TagCharsOffset;
+            public int TagCharsLength;
+
+            public int StemBytesOffset;
+            public int StemBytesLength;
+            public int TagBytesOffset;
+            public int TagBytesLength;
         }
 
-        private readonly ArrayBufferWriter<char> wordBuffer;
-        private readonly ArrayBufferWriter<char> stemBuffer;
-        private readonly ArrayBufferWriter<char> tagBuffer;
+        private readonly ArrayBufferWriter<char> wordCharsBuffer;
+        private readonly ArrayBufferWriter<char> stemCharsBuffer;
+        private readonly ArrayBufferWriter<char> tagCharsBuffer;
+
+        private readonly ArrayBufferWriter<byte> wordBytesBuffer;
+        private readonly ArrayBufferWriter<byte> stemBytesBuffer;
+        private readonly ArrayBufferWriter<byte> tagBytesBuffer;
         private readonly ArrayBufferWriter<Entry> entries;
 
         public DictionaryLookupResult()
         {
-            wordBuffer = new ArrayBufferWriter<char>();
-            stemBuffer = new ArrayBufferWriter<char>();
-            tagBuffer = new ArrayBufferWriter<char>();
+            wordCharsBuffer = new ArrayBufferWriter<char>();
+            stemCharsBuffer = new ArrayBufferWriter<char>();
+            tagCharsBuffer = new ArrayBufferWriter<char>();
+            wordBytesBuffer = new ArrayBufferWriter<byte>();
+            stemBytesBuffer = new ArrayBufferWriter<byte>();
+            tagBytesBuffer = new ArrayBufferWriter<byte>();
             entries = new ArrayBufferWriter<Entry>();
+        }
+
+        /// <summary>
+        /// Removes all results while retaining the buffers' allocated storage.
+        /// </summary>
+        internal void Clear()
+        {
+            wordCharsBuffer.Clear();
+            stemCharsBuffer.Clear();
+            tagCharsBuffer.Clear();
+            wordBytesBuffer.Clear();
+            stemBytesBuffer.Clear();
+            tagBytesBuffer.Clear();
+            entries.Clear();
         }
 
         /// <summary>
@@ -39,7 +65,7 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Gets the word associated with this lookup.
         /// </summary>
-        public ReadOnlyMemory<char> Word => wordBuffer.WrittenMemory;
+        public ReadOnlyMemory<char> Word => wordCharsBuffer.WrittenMemory;
 
         public Enumerator GetEnumerator()
         {
@@ -59,13 +85,13 @@ namespace Morfologik.Stemming
         public struct Enumerator : IEnumerator<WordData2>
         {
             private readonly DictionaryLookupResult result;
-            private readonly LookupWordData wordData;
+            private readonly WordData2 wordData;
             private int index;
 
             internal Enumerator(DictionaryLookupResult result)
             {
                 this.result = result;
-                wordData = new LookupWordData(result);
+                wordData = new WordData2(result);
                 index = -1;
             }
 
@@ -95,52 +121,84 @@ namespace Morfologik.Stemming
             }
         }
 
-        internal ArrayBufferWriter<char> StemBuffer => stemBuffer;
-        internal ArrayBufferWriter<char> TagBuffer => tagBuffer;
+        internal ArrayBufferWriter<char> WordCharsBuffer => wordCharsBuffer;
+        internal ArrayBufferWriter<char> StemCharsBuffer => stemCharsBuffer;
+        internal ArrayBufferWriter<char> TagCharsBuffer => tagCharsBuffer;
+        internal ArrayBufferWriter<byte> WordBytesBuffer => wordBytesBuffer;
+        internal ArrayBufferWriter<byte> StemBytesBuffer => stemBytesBuffer;
+        internal ArrayBufferWriter<byte> TagBytesBuffer => tagBytesBuffer;
+
 
         internal ReadOnlyMemory<char> GetStem(int index)
         {
             Entry entry = entries.WrittenSpan[index];
-            return StemBuffer.WrittenMemory.Slice(entry.StemOffset, entry.StemLength);
+            return StemCharsBuffer.WrittenMemory.Slice(entry.StemCharsOffset, entry.StemCharsLength);
         }
 
         internal ReadOnlyMemory<char> GetTag(int index)
         {
             Entry entry = entries.WrittenSpan[index];
-            return TagBuffer.WrittenMemory.Slice(entry.TagOffset, entry.TagLength);
+            return TagCharsBuffer.WrittenMemory.Slice(entry.TagCharsOffset, entry.TagCharsLength);
         }
 
-        /// <summary>
-        /// Removes all results while retaining the buffers' allocated storage.
-        /// </summary>
-        internal void Clear()
+        internal ReadOnlyMemory<byte> GetStemBytes(int index)
         {
-            wordBuffer.Clear();
-            stemBuffer.Clear();
-            tagBuffer.Clear();
-            entries.Clear();
+            Entry entry = entries.WrittenSpan[index];
+            return stemBytesBuffer.WrittenMemory.Slice(entry.StemBytesOffset, entry.StemBytesLength);
+        }
+
+        internal ReadOnlyMemory<byte> GetTagBytes(int index)
+        {
+            Entry entry = entries.WrittenSpan[index];
+            return tagBytesBuffer.WrittenMemory.Slice(entry.TagBytesOffset, entry.TagBytesLength);
         }
 
         internal void SetWord(ReadOnlySpan<char> word)
         {
-            Span<char> temp = wordBuffer.GetSpan(word.Length);
+            Span<char> temp = wordCharsBuffer.GetSpan(word.Length);
             word.CopyTo(temp);
-            wordBuffer.Advance(word.Length);
+            wordCharsBuffer.Advance(word.Length);
         }
 
-        internal void AddEntry(int stemOffset, int stemLength, int tagOffset, int tagLength)
+        internal void AddEntry(int stemCharsOffset, int stemCharsLength, int tagCharsOffset, int tagCharsLength,
+            int stemBytesOffset, int stemBytesLength, int tagBytesOffset, int tagBytesLength)
         {
             Span<Entry> destination = entries.GetSpan(1);
 
             destination[0] = new Entry
             {
-                StemOffset = stemOffset,
-                StemLength = stemLength,
-                TagOffset = tagOffset,
-                TagLength = tagLength
+                StemCharsOffset = stemCharsOffset,
+                StemCharsLength = stemCharsLength,
+                TagCharsOffset = tagCharsOffset,
+                TagCharsLength = tagCharsLength,
+
+                StemBytesOffset = stemBytesOffset,
+                StemBytesLength = stemBytesLength,
+                TagBytesOffset = tagBytesOffset,
+                TagBytesLength = tagBytesLength
             };
 
             entries.Advance(1);
         }
+
+        #region IWordDataStorage Members
+
+        ReadOnlyMemory<char> IWordDataStorage.Word => Word;
+
+        ReadOnlyMemory<byte> IWordDataStorage.WordBytes => wordBytesBuffer.WrittenMemory;
+
+        ReadOnlyMemory<char> IWordDataStorage.GetStem(int index)
+            => GetStem(index);
+
+        ReadOnlyMemory<byte> IWordDataStorage.GetStemBytes(int index)
+            => GetStemBytes(index);
+
+        ReadOnlyMemory<char> IWordDataStorage.GetTag(int index)
+            => GetTag(index);
+
+        ReadOnlyMemory<byte> IWordDataStorage.GetTagBytes(int index)
+            => GetTagBytes(index);
+
+        #endregion IWordDataStorage Members
     }
 }
