@@ -26,6 +26,16 @@ namespace Morfologik.Stemming
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="WordData2"/> class that contains
+        /// the values copied from the specified <see cref="WordData2"/>.
+        /// </summary>
+        /// <param name="wordData">The <see cref="WordData2"/> to copy.</param>
+        public WordData2(WordData2 wordData)
+        {
+            storage = new WordDataStorage(wordData.storage, wordData.index);
+        }
+
+        /// <summary>
         /// Gets the inflected word from the underlying data storage.
         /// Usually the parameter passed to
         /// <see cref="DictionaryLookup.Lookup(ReadOnlySpan{char}, DictionaryLookupResult?)"/>.
@@ -161,7 +171,5 @@ namespace Morfologik.Stemming
         {
             this.index = index;
         }
-
-        // TODO: Implement Clone()
     }
 }
