@@ -1,5 +1,4 @@
-﻿using J2N.IO;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -198,7 +197,7 @@ namespace Morfologik.Fsa
         /// <summary>
         /// Returns an enumerator over all binary sequences starting from the initial FSA
         /// state (node) and ending in final nodes. The returned enumerator is a
-        /// <see cref="ByteBuffer"/> whose contents changes on each call to
+        /// <see cref="ReadOnlyMemory{Byte}"/> whose contents changes on each call to
         /// <see cref="IEnumerator.MoveNext()"/>. The keep the contents between calls to
         /// <see cref="IEnumerator.MoveNext()"/>, one must copy the buffer to some other location.
         /// <para/>
@@ -304,21 +303,28 @@ namespace Morfologik.Fsa
         /// Reads all remaining bytes from an input stream and returns
         /// them as a byte array.
         /// </summary>
-        /// <param name="input">The input stream.</param>
+        /// <param name="stream">The input stream.</param>
         /// <returns>Reads all remaining bytes from an input stream and returns
         /// them as a byte array.</returns>
         /// <exception cref="IOException">Rethrown if an I/O exception occurs.</exception>
-        internal static byte[] ReadRemaining(DataInputStream input)
+        internal static byte[] ReadRemaining(Stream stream)
         {
-            using (var baos = new MemoryStream())
+            if (stream.CanSeek)
             {
-                byte[] buffer = new byte[1024 * 8];
-                int len;
-                while ((len = input.Read(buffer, 0, buffer.Length)) > 0)
+                long remaining = stream.Length - stream.Position;
+
+                if ((ulong)remaining <= int.MaxValue)
                 {
-                    baos.Write(buffer, 0, len);
+                    byte[] buffer = new byte[(int)remaining];
+                    stream.ReadExactly(buffer);
+                    return buffer;
                 }
-                return baos.ToArray();
+            }
+
+            using (var output = new MemoryStream())
+            {
+                stream.CopyTo(output);
+                return output.ToArray();
             }
         }
 

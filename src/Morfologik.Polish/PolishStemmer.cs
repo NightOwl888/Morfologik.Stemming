@@ -1,9 +1,7 @@
-﻿using J2N.Text;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace Morfologik.Stemming.Polish
 {
@@ -69,7 +67,7 @@ namespace Morfologik.Stemming.Polish
         /// <param name="word">The word to look up.</param>
         /// <param name="reuse">An optional existing <see cref="DictionaryLookupResult"/> buffer to reuse.</param>
         /// <returns>The lookup result.</returns>
-        public DictionaryLookupResult Lookup(ReadOnlySpan<char> word, DictionaryLookupResult? reuse) => lookup.Lookup(word, reuse);
+        public DictionaryLookupResult Lookup(ReadOnlySpan<char> word, DictionaryLookupResult? reuse = default) => lookup.Lookup(word, reuse);
 
         ///// <summary>
         ///// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,

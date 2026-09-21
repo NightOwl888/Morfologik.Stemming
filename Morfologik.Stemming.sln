@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.11.35327.3
+# Visual Studio Version 18
+VisualStudioVersion = 18.9.12112.369 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Morfologik.Stemming", "src\Morfologik.Stemming\Morfologik.Stemming.csproj", "{9B1C7012-9BB6-4624-B9F2-0D2CF211C624}"
 EndProject
@@ -72,6 +72,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{B14A2517-8
 		docs\make-release.md = docs\make-release.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Morfologik.Fsa.Tests", "tests\Morfologik.Fsa.Tests\Morfologik.Fsa.Tests.csproj", "{A84E39CC-596D-4304-BD93-D9D558B62775}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -102,6 +104,10 @@ Global
 		{DF899531-8564-4F63-B3A0-9402077B8371}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF899531-8564-4F63-B3A0-9402077B8371}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DF899531-8564-4F63-B3A0-9402077B8371}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A84E39CC-596D-4304-BD93-D9D558B62775}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A84E39CC-596D-4304-BD93-D9D558B62775}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A84E39CC-596D-4304-BD93-D9D558B62775}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A84E39CC-596D-4304-BD93-D9D558B62775}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -114,6 +120,7 @@ Global
 		{66AAE700-ABB2-479D-A1EF-69C2499C2269} = {932C9053-F175-4372-8749-89D8FABBEB02}
 		{DF899531-8564-4F63-B3A0-9402077B8371} = {73433E36-3118-443F-83BB-5EF412315732}
 		{4AC081A4-694B-4A4D-857C-C94FE76BFE08} = {5F8BBDBE-39E4-452A-B2D7-E9A315E61959}
+		{A84E39CC-596D-4304-BD93-D9D558B62775} = {73433E36-3118-443F-83BB-5EF412315732}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {90D9B452-C6E4-4706-99D0-DFA7821044E0}

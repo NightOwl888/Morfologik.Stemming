@@ -1,5 +1,4 @@
-﻿using J2N.IO;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -166,41 +165,38 @@ namespace Morfologik.Fsa
         /// </summary>
         internal CFSA(Stream stream)
         {
-            using (DataInputStream input = new DataInputStream(stream, true))
+            // Skip legacy header fields.
+            stream.ReadByteRequired();  // filler
+            stream.ReadByteRequired();  // annotation
+            byte hgtl = stream.ReadByteRequired();
+
+            /*
+             * Determine if the automaton was compiled with NUMBERS. If so, modify
+             * ctl and goto fields accordingly.
+             */
+            flags = FSAFlags.Flexible | FSAFlags.StopBit | FSAFlags.NextBit;
+            if ((hgtl & 0xf0) != 0)
             {
-                // Skip legacy header fields.
-                input.ReadByte();  // filler
-                input.ReadByte();  // annotation
-                byte hgtl = (byte)input.ReadByte();
-
-                /*
-                 * Determine if the automaton was compiled with NUMBERS. If so, modify
-                 * ctl and goto fields accordingly.
-                 */
-                flags = FSAFlags.Flexible | FSAFlags.StopBit | FSAFlags.NextBit;
-                if ((hgtl & 0xf0) != 0)
-                {
-                    this.NodeDataLength = (hgtl >>> 4) & 0x0f;
-                    this.GoToLength = hgtl & 0x0f;
-                    flags |= FSAFlags.Numbers;
-                }
-                else
-                {
-                    this.NodeDataLength = 0;
-                    this.GoToLength = hgtl & 0x0f;
-                }
-
-                /*
-                 * Read mapping dictionary.
-                 */
-                LabelMapping = new byte[1 << 5];
-                input.ReadFully(LabelMapping);
-
-                /*
-                 * Read arcs' data.
-                 */
-                Arcs = ReadRemaining(input);
+                this.NodeDataLength = (hgtl >>> 4) & 0x0f;
+                this.GoToLength = hgtl & 0x0f;
+                flags |= FSAFlags.Numbers;
             }
+            else
+            {
+                this.NodeDataLength = 0;
+                this.GoToLength = hgtl & 0x0f;
+            }
+
+            /*
+             * Read mapping dictionary.
+             */
+            LabelMapping = new byte[1 << 5];
+            stream.ReadExactly(LabelMapping);
+
+            /*
+             * Read arcs' data.
+             */
+            Arcs = ReadRemaining(stream);
         }
 
         /// <summary>

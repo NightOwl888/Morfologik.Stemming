@@ -1,5 +1,4 @@
-﻿using J2N.IO;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
@@ -134,11 +133,9 @@ namespace Morfologik.Fsa
         /// </summary>
         internal FSA5(Stream stream)
         {
-            DataInputStream input = new DataInputStream(stream);
-
-            this.Filler = (byte)input.ReadByte();
-            this.Annotation = (byte)input.ReadByte();
-            byte hgtl = (byte)input.ReadByte();
+            this.Filler = stream.ReadByteRequired();
+            this.Annotation = stream.ReadByteRequired();
+            byte hgtl = stream.ReadByteRequired();
 
             /*
              * Determine if the automaton was compiled with NUMBERS. If so, modify
@@ -153,7 +150,7 @@ namespace Morfologik.Fsa
             this.NodeDataLength = (hgtl >>> 4) & 0x0f;
             this.GoToLength = hgtl & 0x0f;
 
-            Arcs = ReadRemaining(input);
+            Arcs = ReadRemaining(stream);
         }
 
         /// <summary>
