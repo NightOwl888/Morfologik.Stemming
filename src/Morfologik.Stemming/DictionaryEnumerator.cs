@@ -1,4 +1,5 @@
 ﻿using J2N.Text;
+using Morfologik.Stemming.Support;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -35,6 +36,11 @@ namespace Morfologik.Stemming
             this.wordDataStorage = new WordDataStorage();
             this.entry = new WordData(wordDataStorage);
             this.decodeStems = decodeStems;
+        }
+
+        static DictionaryEnumerator()
+        {
+            EncodingProviderInitializer.EnsureInitialized(); // Morfologik.Stemming specific - initialize encoding provider
         }
 
         /// <summary>
