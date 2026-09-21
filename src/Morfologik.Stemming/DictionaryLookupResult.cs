@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text;
 
 namespace Morfologik.Stemming
 {
@@ -12,8 +14,11 @@ namespace Morfologik.Stemming
     {
         private struct Entry
         {
+            public bool IsStemLoaded;
             public int StemCharsOffset;
             public int StemCharsLength;
+
+            public bool IsTagLoaded;
             public int TagCharsOffset;
             public int TagCharsLength;
 
@@ -31,6 +36,8 @@ namespace Morfologik.Stemming
         private readonly ArrayBufferWriter<byte> stemBytesBuffer;
         private readonly ArrayBufferWriter<byte> tagBytesBuffer;
         private readonly ArrayBufferWriter<Entry> entries;
+
+        private Encoding? decoder;
 
         public DictionaryLookupResult()
         {
@@ -55,6 +62,7 @@ namespace Morfologik.Stemming
             stemBytesBuffer.Clear();
             tagBytesBuffer.Clear();
             entries.Clear();
+            decoder = null;
         }
 
         /// <summary>
@@ -122,8 +130,8 @@ namespace Morfologik.Stemming
         }
 
         internal ArrayBufferWriter<char> WordCharsBuffer => wordCharsBuffer;
-        internal ArrayBufferWriter<char> StemCharsBuffer => stemCharsBuffer;
-        internal ArrayBufferWriter<char> TagCharsBuffer => tagCharsBuffer;
+        //internal ArrayBufferWriter<char> StemCharsBuffer => stemCharsBuffer;
+        //internal ArrayBufferWriter<char> TagCharsBuffer => tagCharsBuffer;
         internal ArrayBufferWriter<byte> WordBytesBuffer => wordBytesBuffer;
         internal ArrayBufferWriter<byte> StemBytesBuffer => stemBytesBuffer;
         internal ArrayBufferWriter<byte> TagBytesBuffer => tagBytesBuffer;
@@ -132,13 +140,41 @@ namespace Morfologik.Stemming
         internal ReadOnlyMemory<char> GetStem(int index)
         {
             Entry entry = entries.WrittenSpan[index];
-            return StemCharsBuffer.WrittenMemory.Slice(entry.StemCharsOffset, entry.StemCharsLength);
+            return stemCharsBuffer.WrittenMemory.Slice(entry.StemCharsOffset, entry.StemCharsLength);
+        }
+
+        internal void SetStemOffsets(int index, int offset, int length)
+        {
+            ref Entry entry = ref entries.GetReference(index);
+            entry.StemCharsOffset = offset;
+            entry.StemCharsLength = length;
+            entry.IsStemLoaded = true;
+        }
+
+        internal bool IsStemLoaded(int index)
+        {
+            Entry entry = entries.WrittenSpan[index];
+            return entry.IsStemLoaded;
         }
 
         internal ReadOnlyMemory<char> GetTag(int index)
         {
             Entry entry = entries.WrittenSpan[index];
-            return TagCharsBuffer.WrittenMemory.Slice(entry.TagCharsOffset, entry.TagCharsLength);
+            return tagCharsBuffer.WrittenMemory.Slice(entry.TagCharsOffset, entry.TagCharsLength);
+        }
+
+        internal void SetTagOffsets(int index, int offset, int length)
+        {
+            ref Entry entry = ref entries.GetReference(index);
+            entry.TagCharsOffset = offset;
+            entry.TagCharsLength = length;
+            entry.IsTagLoaded = true;
+        }
+
+        internal bool IsTagLoaded(int index)
+        {
+            Entry entry = entries.WrittenSpan[index];
+            return entry.IsTagLoaded;
         }
 
         internal ReadOnlyMemory<byte> GetStemBytes(int index)
@@ -160,18 +196,27 @@ namespace Morfologik.Stemming
             wordCharsBuffer.Advance(word.Length);
         }
 
-        internal void AddEntry(int stemCharsOffset, int stemCharsLength, int tagCharsOffset, int tagCharsLength,
-            int stemBytesOffset, int stemBytesLength, int tagBytesOffset, int tagBytesLength)
+        internal void SetDecoder(Encoding decoder)
+        {
+            Debug.Assert(decoder is not null);
+            this.decoder = decoder;
+        }
+
+        internal Encoding Decoder
+        {
+            get
+            {
+                Debug.Assert(decoder is not null);
+                return decoder!;
+            }
+        }
+
+        internal void AddEntry(int stemBytesOffset, int stemBytesLength, int tagBytesOffset, int tagBytesLength)
         {
             Span<Entry> destination = entries.GetSpan(1);
 
             destination[0] = new Entry
             {
-                StemCharsOffset = stemCharsOffset,
-                StemCharsLength = stemCharsLength,
-                TagCharsOffset = tagCharsOffset,
-                TagCharsLength = tagCharsLength,
-
                 StemBytesOffset = stemBytesOffset,
                 StemBytesLength = stemBytesLength,
                 TagBytesOffset = tagBytesOffset,
@@ -183,9 +228,13 @@ namespace Morfologik.Stemming
 
         #region IWordDataStorage Members
 
-        ReadOnlyMemory<char> IWordDataStorage.Word => Word;
+        Encoding IWordDataStorage.Decoder => Decoder;
+
+
+        ReadOnlyMemory<char> IWordDataStorage.Word => wordCharsBuffer.WrittenMemory;
 
         ReadOnlyMemory<byte> IWordDataStorage.WordBytes => wordBytesBuffer.WrittenMemory;
+
 
         ReadOnlyMemory<char> IWordDataStorage.GetStem(int index)
             => GetStem(index);
@@ -193,11 +242,28 @@ namespace Morfologik.Stemming
         ReadOnlyMemory<byte> IWordDataStorage.GetStemBytes(int index)
             => GetStemBytes(index);
 
+        ArrayBufferWriter<char> IWordDataStorage.StemCharBuffer => stemCharsBuffer;
+
+        void IWordDataStorage.SetStemOffsets(int index, int offset, int length)
+            => SetStemOffsets(index, offset, length);
+
+        bool IWordDataStorage.IsStemLoaded(int index)
+            => IsStemLoaded(index);
+
+
         ReadOnlyMemory<char> IWordDataStorage.GetTag(int index)
             => GetTag(index);
 
         ReadOnlyMemory<byte> IWordDataStorage.GetTagBytes(int index)
             => GetTagBytes(index);
+
+        ArrayBufferWriter<char> IWordDataStorage.TagCharBuffer => tagCharsBuffer;
+
+        void IWordDataStorage.SetTagOffsets(int index, int offset, int length)
+            => SetTagOffsets(index, offset, length);
+
+        bool IWordDataStorage.IsTagLoaded(int index)
+            => IsTagLoaded(index);
 
         #endregion IWordDataStorage Members
     }

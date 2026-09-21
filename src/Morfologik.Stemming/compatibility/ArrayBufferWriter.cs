@@ -9,6 +9,10 @@ namespace Morfologik.Stemming
 {
     /// <summary>
     /// Represents a heap-based, array-backed output sink into which <typeparam name="T"/> data can be written.
+    /// <para/>
+    /// This class has been modified since it was copied from the BCL, so we cannot use the BCL version as a
+    /// drop-in replacement here. We need to be able to update elements that are already written to use this class
+    /// for the bookkeeping necessary for multiple stems and tags per word.
     /// </summary>
     internal sealed class ArrayBufferWriter<T> : IBufferWriter<T>
     {
@@ -47,6 +51,27 @@ namespace Morfologik.Stemming
 
             _buffer = new T[initialCapacity];
             _index = 0;
+        }
+
+        /// <summary>
+        /// Returns a reference to an element of the underlying memory.
+        /// This returns by ref so the element can be updated.
+        /// </summary>
+        /// <param name="index">The index for the element to retrieve.</param>
+        /// <returns>An array element, by reference.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is less than 0.
+        /// <para/>
+        /// -or-
+        /// <para/>
+        /// <paramref name="index"/> is greater than <see cref="WrittenCount"/>.
+        /// </exception>
+        public ref T GetReference(int index) // Mofologik.Stemming: Added this to make editing exising elements in the buffer possible.
+        {
+            if ((uint)index >= (uint)_index)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            return ref _buffer[index];
         }
 
         /// <summary>

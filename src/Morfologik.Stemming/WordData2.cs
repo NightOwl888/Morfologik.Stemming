@@ -1,5 +1,7 @@
-﻿using System;
+﻿using J2N.Text;
+using System;
 using System.Diagnostics;
+using System.Text;
 
 namespace Morfologik.Stemming
 {
@@ -48,7 +50,26 @@ namespace Morfologik.Stemming
         /// that the underlying storage stay in scope as long as they
         /// need to access it.
         /// </remarks>
-        public ReadOnlyMemory<char> Stem => storage.GetStem(index);
+        public ReadOnlyMemory<char> Stem
+        {
+            get
+            {
+                if (!storage.IsStemLoaded(index))
+                {
+                    ReadOnlySpan<byte> stemBytes = storage.GetStemBytes(index).Span;
+                    Encoding decoder = storage.Decoder;
+                    ArrayBufferWriter<char> stemCharBuffer = storage.StemCharBuffer;
+                    int max = decoder.GetMaxCharCount(stemBytes.Length);
+                    int offset = stemCharBuffer.WrittenCount;
+                    Span<char> destination = stemCharBuffer.GetSpan(max);
+                    int length = decoder.GetChars(stemBytes, destination);
+                    stemCharBuffer.Advance(length);
+                    storage.SetStemOffsets(index, offset, length);
+                }
+
+                return storage.GetStem(index);
+            }
+        }
 
         /// <summary>
         /// Gets the decoded tag associated with the word.
@@ -61,7 +82,26 @@ namespace Morfologik.Stemming
         /// that the underlying storage stay in scope as long as they
         /// need to access it.
         /// </remarks>
-        public ReadOnlyMemory<char> Tag => storage.GetTag(index);
+        public ReadOnlyMemory<char> Tag
+        {
+            get
+            {
+                if (!storage.IsTagLoaded(index))
+                {
+                    ReadOnlySpan<byte> TagBytes = storage.GetTagBytes(index).Span;
+                    Encoding decoder = storage.Decoder;
+                    ArrayBufferWriter<char> tagCharBuffer = storage.TagCharBuffer;
+                    int max = decoder.GetMaxCharCount(TagBytes.Length);
+                    int offset = tagCharBuffer.WrittenCount;
+                    Span<char> destination = tagCharBuffer.GetSpan(max);
+                    int length = decoder.GetChars(TagBytes, destination);
+                    tagCharBuffer.Advance(length);
+                    storage.SetTagOffsets(index, offset, length);
+                }
+
+                return storage.GetTag(index);
+            }
+        }
 
         /// <summary>
         /// Gets the word's binary data (no charset decoding).

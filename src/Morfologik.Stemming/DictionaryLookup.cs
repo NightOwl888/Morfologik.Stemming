@@ -948,6 +948,7 @@ namespace Morfologik.Stemming
         private DictionaryLookupResult LookupCore(ReadOnlySpan<char> word, DictionaryLookupResult result)
         {
             result.Clear();
+            result.SetDecoder(decoder);
             byte separator = dictionaryMetadata.Separator;
 #pragma warning disable 612, 618
             int prefixBytes = sequenceEncoder.PrefixBytes;
@@ -1045,15 +1046,6 @@ namespace Morfologik.Stemming
                             }
                             result.StemBytesBuffer.Advance(stemByteCount);
 
-
-                            int stemCharBufferCount = decoder.GetMaxCharCount(stemByteCount);
-                            int stemCharOffset = result.StemCharsBuffer.WrittenCount;
-
-                            Span<char> stemDestination = result.StemCharsBuffer.GetSpan(stemCharBufferCount);
-                            int stemCharCount = decoder.GetChars(stemDecodedBuffer.Slice(0, stemByteCount), stemDestination);
-
-                            result.StemCharsBuffer.Advance(stemCharCount);
-
                             // Skip separator character.
                             sepPos++;
 
@@ -1063,28 +1055,15 @@ namespace Morfologik.Stemming
                             int tagSize = bbSize - sepPos;
                             int tagByteOffset = result.TagBytesBuffer.WrittenCount;
                             int tagByteCount = tagSize;
-                            int tagCharOffset = result.TagCharsBuffer.WrittenCount;
-                            int tagCharCount = 0;
 
                             if (tagSize > 0)
                             {
                                 Span<byte> tagByteDestination = result.TagBytesBuffer.GetSpan(tagSize);
                                 ba.AsSpan(sepPos, tagSize).CopyTo(tagByteDestination);
                                 result.TagBytesBuffer.Advance(tagSize);
-
-                                int maxTagCharCount = decoder.GetMaxCharCount(tagSize);
-
-                                Span<char> tagDestination = result.TagCharsBuffer.GetSpan(maxTagCharCount);
-                                tagCharCount = decoder.GetChars(ba.AsSpan(sepPos, tagSize), tagDestination);
-
-                                result.TagCharsBuffer.Advance(tagCharCount);
                             }
 
                             result.AddEntry(
-                                stemCharOffset,
-                                stemCharCount,
-                                tagCharOffset,
-                                tagCharCount,
                                 stemByteOffset,
                                 stemByteCount,
                                 tagByteOffset,
