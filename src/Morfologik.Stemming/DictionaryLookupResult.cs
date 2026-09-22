@@ -10,7 +10,7 @@ namespace Morfologik.Stemming
     /// Contains the results of a dictionary lookup in buffer that can be
     /// reused for additional lookup operations.
     /// </summary>
-    public sealed class DictionaryLookupResult : IWordDataStorage, IEnumerable<WordData>
+    public sealed class DictionaryLookupResult : IWordDataStorage, IList<WordData>, IEnumerable<WordData>
     {
         private struct Entry
         {
@@ -39,6 +39,9 @@ namespace Morfologik.Stemming
 
         private Encoding? decoder;
 
+        /// <summary>
+        /// Initializes a new instance of a <see cref="DictionaryLookupResult"/>.
+        /// </summary>
         public DictionaryLookupResult()
         {
             wordCharsBuffer = new ArrayBufferWriter<char>();
@@ -75,6 +78,27 @@ namespace Morfologik.Stemming
         /// </summary>
         public ReadOnlyMemory<char> Word => wordCharsBuffer.WrittenMemory;
 
+        /// <summary>
+        /// Gets the underlying <see cref="WordData"/> at the specified <paramref name="index"/>.
+        /// </summary>
+        /// <param name="index">The zero-based index of the element to get.</param>
+        /// <value>The element at the specified index.</value>
+        public WordData this[int index]
+        {
+            get
+            {
+                if ((uint)index >= (uint)Count)
+                    throw new ArgumentOutOfRangeException(nameof(index));
+
+                return new(this, index);
+            }
+        }
+
+        /// <summary>
+        /// Returns an enumerator over the <see cref="WordData"/> elemements associated
+        /// with the <see cref="Word"/>.
+        /// </summary>
+        /// <returns></returns>
         public Enumerator GetEnumerator()
         {
             return new Enumerator(this);
@@ -90,6 +114,10 @@ namespace Morfologik.Stemming
             return GetEnumerator();
         }
 
+        /// <summary>
+        /// An enumerator over the <see cref="WordData"/> elements associated with
+        /// the <see cref="Word"/>.
+        /// </summary>
         public struct Enumerator : IEnumerator<WordData>
         {
             private readonly DictionaryLookupResult result;
@@ -107,6 +135,11 @@ namespace Morfologik.Stemming
 
             object IEnumerator.Current => Current;
 
+            /// <summary>
+            /// Advances the enumerator to the next <see cref="WordData"/>
+            /// element of the list.
+            /// </summary>
+            /// <returns></returns>
             public bool MoveNext()
             {
                 int nextIndex = index + 1;
@@ -118,11 +151,14 @@ namespace Morfologik.Stemming
                 return true;
             }
 
-            public void Reset()
+            void IEnumerator.Reset()
             {
                 index = -1;
             }
 
+            /// <summary>
+            /// Releases all resources used by the <see cref="Enumerator"/>.
+            /// </summary>
             public void Dispose()
             {
                 // Intentionally empty
@@ -130,8 +166,6 @@ namespace Morfologik.Stemming
         }
 
         internal ArrayBufferWriter<char> WordCharsBuffer => wordCharsBuffer;
-        //internal ArrayBufferWriter<char> StemCharsBuffer => stemCharsBuffer;
-        //internal ArrayBufferWriter<char> TagCharsBuffer => tagCharsBuffer;
         internal ArrayBufferWriter<byte> WordBytesBuffer => wordBytesBuffer;
         internal ArrayBufferWriter<byte> StemBytesBuffer => stemBytesBuffer;
         internal ArrayBufferWriter<byte> TagBytesBuffer => tagBytesBuffer;
@@ -266,5 +300,74 @@ namespace Morfologik.Stemming
             => IsTagLoaded(index);
 
         #endregion IWordDataStorage Members
+
+
+        #region IList<WordData> Members
+
+        int ICollection<WordData>.Count => Count;
+
+        bool ICollection<WordData>.IsReadOnly => true;
+
+        WordData IList<WordData>.this[int index]
+        {
+            get => this[index];
+            set => throw new NotSupportedException();
+        }
+
+        int IList<WordData>.IndexOf(WordData item)
+        {
+            throw new NotSupportedException();
+        }
+
+        void IList<WordData>.Insert(int index, WordData item)
+        {
+            throw new NotSupportedException();
+        }
+
+        void IList<WordData>.RemoveAt(int index)
+        {
+            throw new NotSupportedException();
+        }
+
+        void ICollection<WordData>.Add(WordData item)
+        {
+            throw new NotSupportedException();
+        }
+
+        void ICollection<WordData>.Clear()
+        {
+            // NOTE: Our Clear() method is only meant for internal use.
+            // It doesn't actually free any memory, it is just meant to reset
+            // the buffers to 0 for the next load.
+            throw new NotSupportedException();
+        }
+
+        bool ICollection<WordData>.Contains(WordData item)
+        {
+            throw new NotSupportedException();
+        }
+
+        void ICollection<WordData>.CopyTo(WordData[] array, int arrayIndex)
+        {
+            if (array is null)
+                throw new ArgumentNullException(nameof(array));
+            if (arrayIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+            if (array.Length - arrayIndex < Count)
+                throw new ArgumentException(
+                    "The number of elements in the source collection is greater than the available space in the destination array.");
+
+            for (int i = 0; i < Count; i++)
+            {
+                array[arrayIndex + i] = new WordData(this[i]);
+            }
+        }
+
+        bool ICollection<WordData>.Remove(WordData item)
+        {
+            throw new NotSupportedException();
+        }
+
+        #endregion IList<WordData> Members
     }
 }
