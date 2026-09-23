@@ -4,6 +4,12 @@ using System.Text;
 
 namespace Morfologik.Stemming
 {
+    /// <summary>
+    /// Stores the backing data for a single <see cref="WordData"/> object.
+    /// This is used during enumeration with <see cref="DictionaryEnumerator"/>
+    /// as well as for cloning individual <see cref="WordData"/> instances using
+    /// the <see cref="WordData(IWordDataStorage)"/> constructor.
+    /// </summary>
     internal sealed class WordDataStorage : IWordDataStorage
     {
         public WordDataStorage()
