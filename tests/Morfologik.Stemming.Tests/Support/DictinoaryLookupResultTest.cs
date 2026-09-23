@@ -15,23 +15,59 @@ namespace Morfologik.Stemming
                 return Dictionary.Read(fsaStream, metadataStream);
         }
 
+        //[Test]
+        //public void TestLookupResultReuseAndCount()
+        //{
+        //    string dict = "test-prefix.dict";
+        //    var lookup = new DictionaryLookup(ReadDictionary(dict));
+
+        //    // Initial lookup creates a new result or populates a reused one
+        //    DictionaryLookupResult result = lookup.Lookup("Rzeczypospolitej".AsSpan());
+        //    int initialCount = result.Count;
+        //    assertTrue(initialCount > 0);
+        //    assertEquals("Rzeczypospolitej", result.Word.ToString());
+
+        //    // Reuse the result object for a different lookup
+        //    lookup.Lookup("martygalski".AsSpan(), reuse: result);
+        //    assertEquals(0, result.Count);
+        //    assertEquals("martygalski", result.Word.ToString());
+        //}
+
         [Test]
-        public void TestLookupResultReuseAndCount()
+        public void TestLookupResultReuseAndLazyLoading()
         {
             string dict = "test-prefix.dict";
             var lookup = new DictionaryLookup(ReadDictionary(dict));
 
-            // Initial lookup creates a new result or populates a reused one
+            // 1. First lookup with a valid word ("Rzeczypospolitej")
             DictionaryLookupResult result = lookup.Lookup("Rzeczypospolitej".AsSpan());
-            int initialCount = result.Count;
-            assertTrue(initialCount > 0);
-            assertEquals("Rzeczypospolitej", result.Word.ToString());
+            int firstCount = result.Count;
+            assertTrue(firstCount > 0);
 
-            // Reuse the result object for a different lookup
-            lookup.Lookup("martygalski".AsSpan(), reuse: result);
-            assertEquals(0, result.Count);
-            assertEquals("martygalski", result.Word.ToString());
+            // Access WordData properties to trigger lazy loading of stems and tags
+            foreach (var wd in result)
+            {
+                assertEquals("Rzeczypospolitej", wd.Word.ToString());
+                assertEquals("Rzeczpospolita", wd.Stem.ToString());
+                assertEquals("subst:irreg", wd.Tag.ToString());
+            }
+
+            // 2. Reuse the result object for a second distinct valid lookup ("Rzeczyccy")
+            // This tests that buffers, counts, entries, and lazy-loading flags are properly reset.
+            lookup.Lookup("Rzeczyccy".AsSpan(), reuse: result);
+            int secondCount = result.Count;
+            assertTrue(secondCount > 0);
+
+            // Verify that the new word's data is correctly populated and lazy loading 
+            // successfully re-triggers on the reused instance.
+            foreach (var wd in result)
+            {
+                assertEquals("Rzeczyccy", wd.Word.ToString());
+                assertEquals("Rzeczycki", wd.Stem.ToString());
+                assertEquals("adj:pl:nom:m", wd.Tag.ToString());
+            }
         }
+
 
         [Test]
         public void TestIndexerAndOutOfRange()
