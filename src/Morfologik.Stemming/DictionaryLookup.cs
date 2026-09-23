@@ -1,12 +1,10 @@
-﻿using J2N.IO;
-using J2N.Text;
+﻿using J2N.Text;
 using Morfologik.Fsa;
 using Morfologik.Stemming.Support;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 
 namespace Morfologik.Stemming
@@ -26,15 +24,6 @@ namespace Morfologik.Stemming
 
         /// <summary>FSA's root node.</summary>
         private readonly int rootNode;
-
-        /// <summary>Expand buffers and arrays by this constant.</summary>
-        private const int ExpandSize = 10;
-
-        /// <summary>Private internal array of reusable word data objects.</summary>
-        private WordData[] forms = new WordData[0];
-
-        /// <summary>A "view" over an array implementing</summary>
-        private readonly ArrayViewList<WordData> formsList;
 
         /// <summary>
         /// Features of the compiled dictionary.
@@ -61,23 +50,6 @@ namespace Morfologik.Stemming
         private readonly char separatorChar;
 
         /// <summary>
-        /// Internal reusable buffer for encoding words into byte arrays using
-        /// <see cref="encoder"/>.
-        /// </summary>
-        private ByteBuffer byteBuffer = ByteBuffer.Allocate(0);
-
-        /// <summary>
-        /// Internal reusable buffer for encoding words into byte arrays using
-        /// <see cref="encoder"/>.
-        /// </summary>
-        private CharBuffer charBuffer = CharBuffer.Allocate(0);
-
-        /// <summary>
-        /// Reusable match result.
-        /// </summary>
-        private readonly MatchResult matchResult = new MatchResult();
-
-        /// <summary>
         /// The <see cref="Stemming.Dictionary"/> this lookup is using.
         /// </summary>
         private readonly Dictionary dictionary;
@@ -92,15 +64,13 @@ namespace Morfologik.Stemming
         /// <exception cref="ArgumentException">If FSA's root node cannot be acquired (dictionary is empty).</exception>
         public DictionaryLookup(Dictionary dictionary)
         {
-            this.formsList = new ArrayViewList<WordData>(forms, 0, forms.Length);
-
             this.dictionary = dictionary;
             this.dictionaryMetadata = dictionary.Metadata;
             this.sequenceEncoder = dictionary.Metadata.SequenceEncoderType.Get();
-            this.rootNode = dictionary.FSA.GetRootNode();
+            this.rootNode = dictionary.FSA.RootNode;
             this.fsa = dictionary.FSA;
             this.matcher = new FSATraversal(fsa);
-            this.finalStatesIterator = new ByteSequenceEnumerator(fsa, fsa.GetRootNode());
+            this.finalStatesIterator = new ByteSequenceEnumerator(fsa, fsa.RootNode);
 
             if (dictionaryMetadata == null)
             {
@@ -123,587 +93,162 @@ namespace Morfologik.Stemming
         /// followed by a separator. The result is a stem (decompressed accordingly
         /// to the dictionary's specification) and an optional tag data.
         /// </summary>
-        public IList<WordData> Lookup(ICharSequence word)
+        /// <param name="word">The word to lookup.</param>
+        /// <param name="reuse">A <see cref="DictionaryLookupResult"/> instance to reuse
+        /// or <c>null</c> to create a new instance. If not <c>null</c>, this same instance
+        /// will be returned.</param>
+        /// <returns>A list of <see cref="WordData"/> entries (possibly empty).</returns>
+        /// <remarks>
+        /// This method is immutable and threadsafe.
+        /// </remarks>
+        public DictionaryLookupResult Lookup(ReadOnlySpan<char> word, DictionaryLookupResult? reuse = default)
         {
-            byte separator = dictionaryMetadata.Separator;
-#pragma warning disable 612, 618
-            int prefixBytes = sequenceEncoder.PrefixBytes;
-#pragma warning restore 612, 618
+            if (reuse is null)
+            {
+                reuse = new DictionaryLookupResult();
+            }
+            else
+            {
+                reuse.Clear();
+            }
+            reuse.SetDecoder(decoder);
 
             if (dictionaryMetadata.InputConversionPairs.Count > 0)
             {
-                word = ApplyReplacements(word, dictionaryMetadata.InputConversionPairs);
+                using PooledTextBuilder sb = new(word, capacity: word.Length + 16);
+                ApplyReplacements(sb, dictionaryMetadata.InputConversionPairs);
+                return LookupCore(sb.AsSpan(), reuse);
             }
 
-            // Reset the output list to zero length.
-            formsList.Wrap(forms, 0, 0);
-
-            // Encode word characters into bytes in the same encoding as the FSA's.
-            charBuffer = BufferUtils.ClearAndEnsureCapacity(charBuffer, word.Length);
-            for (int i = 0; i < word.Length; i++)
-            {
-                char chr = word[i];
-                if (chr == separatorChar)
-                {
-                    // No valid input can contain the separator.
-                    return formsList;
-                }
-                charBuffer.Put(chr);
-            }
-            charBuffer.Flip();
-            try
-            {
-                byteBuffer = BufferUtils.CharsToBytes(encoder, charBuffer, byteBuffer);
-            }
-            catch (UnmappableInputException)
-            {
-                // This should be a rare occurrence, but if it happens it means there is no way
-                // the dictionary can contain the input word.
-                return formsList;
-            }
-
-            // Try to find a partial match in the dictionary.
-            MatchResult match = matcher.Match(matchResult, byteBuffer
-                .Array, 0, byteBuffer.Remaining, rootNode);
-
-            if (match.Kind == MatchResult.SequenceIsAPrefix)
-            {
-                /*
-                 * The entire sequence exists in the dictionary. A separator should
-                 * be the next symbol.
-                 */
-                int arc = fsa.GetArc(match.Node, separator);
-
-                /*
-                 * The situation when the arc points to a final node should NEVER
-                 * happen. After all, we want the word to have SOME base form.
-                 */
-                if (arc != 0 && !fsa.IsArcFinal(arc))
-                {
-                    // There is such a word in the dictionary. Return its base forms.
-                    int formsCount = 0;
-
-                    finalStatesIterator.RestartFrom(fsa.GetEndNode(arc));
-                    while (finalStatesIterator.MoveNext())
-                    {
-                        ByteBuffer bb = finalStatesIterator.Current;
-                        byte[] ba = bb.Array;
-                        int bbSize = bb.Remaining;
-
-                        if (formsCount >= forms.Length)
-                        {
-                            //forms = Arrays.CopyOf(forms, forms.Length + EXPAND_SIZE);
-                            Array.Resize(ref forms, forms.Length + ExpandSize);
-                            for (int k = 0; k < forms.Length; k++)
-                            {
-                                if (forms[k] == null)
-                                    forms[k] = new WordData(decoder);
-                            }
-                        }
-
-                        /*
-                         * Now, expand the prefix/ suffix 'compression' and store
-                         * the base form.
-                         */
-                        WordData wordData = forms[formsCount++];
-                        if (!dictionaryMetadata.OutputConversionPairs.Any())
-                        {
-                            wordData.Update(byteBuffer, word);
-                        }
-                        else
-                        {
-                            wordData.Update(byteBuffer, ApplyReplacements(word, dictionaryMetadata.OutputConversionPairs));
-                        }
-
-                        /*
-                         * Find the separator byte's position splitting the inflection instructions
-                         * from the tag.
-                         */
-                        Debug.Assert(prefixBytes <= bbSize, sequenceEncoder.GetType() + " >? " + bbSize);
-                        int sepPos;
-                        for (sepPos = prefixBytes; sepPos < bbSize; sepPos++)
-                        {
-                            if (ba[sepPos] == separator)
-                            {
-                                break;
-                            }
-                        }
-
-                        /*
-                         * Decode the stem into stem buffer.
-                         */
-                        wordData.stemBuffer = sequenceEncoder.Decode(wordData.stemBuffer,
-                                                                 byteBuffer,
-                                                                 ByteBuffer.Wrap(ba, 0, sepPos));
-
-                        // Skip separator character.
-                        sepPos++;
-
-                        /*
-                         * Decode the tag data.
-                         */
-                        int tagSize = bbSize - sepPos;
-                        if (tagSize > 0)
-                        {
-                            wordData.tagBuffer = BufferUtils.ClearAndEnsureCapacity(wordData.tagBuffer, tagSize);
-                            wordData.tagBuffer.Put(ba, sepPos, tagSize);
-                            wordData.tagBuffer.Flip();
-                        }
-                    }
-
-                    formsList.Wrap(forms, 0, formsCount);
-                }
-            }
-            else
-            {
-                /*
-                 * this case is somewhat confusing: we should have hit the separator
-                 * first... I don't really know how to deal with it at the time
-                 * being.
-                 */
-            }
-            return formsList;
+            return LookupCore(word, reuse);
         }
 
-        /// <summary>
-        /// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
-        /// followed by a separator. The result is a stem (decompressed accordingly
-        /// to the dictionary's specification) and an optional tag data.
-        /// </summary>
-        public IList<WordData> Lookup(char[] word)
+        private DictionaryLookupResult LookupCore(ReadOnlySpan<char> word, DictionaryLookupResult result)
         {
             byte separator = dictionaryMetadata.Separator;
 #pragma warning disable 612, 618
             int prefixBytes = sequenceEncoder.PrefixBytes;
 #pragma warning restore 612, 618
 
-            if (dictionaryMetadata.InputConversionPairs.Any())
+            if (word.IndexOf(separatorChar) > -1)
             {
-                word = ApplyReplacements(word, dictionaryMetadata.InputConversionPairs);
+                // No valid input can contain the separator.
+                result.Clear();
+                return result;
             }
 
-            // Reset the output list to zero length.
-            formsList.Wrap(forms, 0, 0);
-
-            // Encode word characters into bytes in the same encoding as the FSA's.
-            charBuffer = BufferUtils.ClearAndEnsureCapacity(charBuffer, word.Length);
-            for (int i = 0; i < word.Length; i++)
-            {
-                char chr = word[i];
-                if (chr == separatorChar)
-                {
-                    // No valid input can contain the separator.
-                    return formsList;
-                }
-                charBuffer.Put(chr);
-            }
-            charBuffer.Flip();
+            int wordByteBufferLength = encoder.GetMaxByteCount(word.Length);
+            Span<byte> wordByteBuffer = result.WordBytesBuffer.GetSpan(wordByteBufferLength);
             try
             {
-                byteBuffer = BufferUtils.CharsToBytes(encoder, charBuffer, byteBuffer);
-            }
-            catch (UnmappableInputException)
-            {
-                // This should be a rare occurrence, but if it happens it means there is no way
-                // the dictionary can contain the input word.
-                return formsList;
-            }
+                // Allow this to throw - we catch it below and return an empty result.
+                // This is important because silently replacing characters would incorrectly
+                // change the lookup to something else.
+                int wordByteLength = encoder.GetBytes(word, wordByteBuffer);
 
-            // Try to find a partial match in the dictionary.
-            MatchResult match = matcher.Match(matchResult, byteBuffer
-                .Array, 0, byteBuffer.Remaining, rootNode);
+                // Try to find a partial match in the dictionary.
+                MatchResult match = matcher.Match(wordByteBuffer.Slice(0, wordByteLength), rootNode);
 
-            if (match.Kind == MatchResult.SequenceIsAPrefix)
-            {
-                /*
-                 * The entire sequence exists in the dictionary. A separator should
-                 * be the next symbol.
-                 */
-                int arc = fsa.GetArc(match.Node, separator);
-
-                /*
-                 * The situation when the arc points to a final node should NEVER
-                 * happen. After all, we want the word to have SOME base form.
-                 */
-                if (arc != 0 && !fsa.IsArcFinal(arc))
+                if (match.Kind == MatchResultKind.SequenceIsAPrefix)
                 {
-                    // There is such a word in the dictionary. Return its base forms.
-                    int formsCount = 0;
+                    /*
+                     * The entire sequence exists in the dictionary. A separator should
+                     * be the next symbol.
+                     */
+                    int arc = fsa.GetArc(match.Node, separator);
 
-                    finalStatesIterator.RestartFrom(fsa.GetEndNode(arc));
-                    while (finalStatesIterator.MoveNext())
+                    /*
+                     * The situation when the arc points to a final node should NEVER
+                     * happen. After all, we want the word to have SOME base form.
+                     */
+                    if (arc != 0 && !fsa.IsArcFinal(arc))
                     {
-                        ByteBuffer bb = finalStatesIterator.Current;
-                        byte[] ba = bb.Array;
-                        int bbSize = bb.Remaining;
+                        // There is such a word in the dictionary. Return its base forms.
+                        //int formsCount = 0;
 
-                        if (formsCount >= forms.Length)
+                        if (dictionaryMetadata.OutputConversionPairs.Count == 0)
                         {
-                            //forms = Arrays.CopyOf(forms, forms.Length + EXPAND_SIZE);
-                            Array.Resize(ref forms, forms.Length + ExpandSize);
-                            for (int k = 0; k < forms.Length; k++)
-                            {
-                                if (forms[k] == null)
-                                    forms[k] = new WordData(decoder);
-                            }
-                        }
-
-                        /*
-                         * Now, expand the prefix/ suffix 'compression' and store
-                         * the base form.
-                         */
-                        WordData wordData = forms[formsCount++];
-                        if (!dictionaryMetadata.OutputConversionPairs.Any())
-                        {
-                            wordData.Update(byteBuffer, word);
+                            result.SetWord(word);
                         }
                         else
                         {
-                            wordData.Update(byteBuffer, ApplyReplacements(word, dictionaryMetadata.OutputConversionPairs));
+                            using PooledTextBuilder outputWord = new(word, capacity: word.Length + 16);
+                            ApplyReplacements(outputWord, dictionaryMetadata.OutputConversionPairs);
+                            result.SetWord(outputWord.AsSpan());
                         }
 
-                        /*
-                         * Find the separator byte's position splitting the inflection instructions
-                         * from the tag.
-                         */
-                        Debug.Assert(prefixBytes <= bbSize, sequenceEncoder.GetType() + " >? " + bbSize);
-                        int sepPos;
-                        for (sepPos = prefixBytes; sepPos < bbSize; sepPos++)
+                        finalStatesIterator.RestartFrom(fsa.GetEndNode(arc));
+                        while (finalStatesIterator.MoveNext())
                         {
-                            if (ba[sepPos] == separator)
+                            ReadOnlyMemory<byte> bb = finalStatesIterator.Current;
+                            ReadOnlySpan<byte> ba = bb.Span;
+                            int bbSize = ba.Length;
+
+                            /*
+                            * Find the separator byte's position splitting the inflection instructions
+                            * from the tag.
+                            */
+                            Debug.Assert(prefixBytes <= bbSize, sequenceEncoder.GetType() + " >? " + bbSize);
+                            // Morfologik.Stemming: Use IndexOf() for the vectorized search in .NET.
+                            int sepPos = ba.Slice(prefixBytes).IndexOf(separator);
+                            if (sepPos >= 0)
                             {
-                                break;
+                                sepPos += prefixBytes;
                             }
-                        }
+                            else
+                            {
+                                sepPos = bbSize;
+                            }
 
-                        /*
-                         * Decode the stem into stem buffer.
-                         */
-                        wordData.stemBuffer = sequenceEncoder.Decode(wordData.stemBuffer,
-                                                                 byteBuffer,
-                                                                 ByteBuffer.Wrap(ba, 0, sepPos));
+                            /*
+                            * Decode the stem into the stem buffer.
+                            */
+                            int encodedLength = sepPos;
+                            int stemByteBufferCount = sequenceEncoder.GetMaxDecodedByteCount(wordByteLength, encodedLength);
+                            int stemByteOffset = result.StemBytesBuffer.WrittenCount;
+                            Span<byte> stemDecodedBuffer = result.StemBytesBuffer.GetSpan(stemByteBufferCount);
 
-                        // Skip separator character.
-                        sepPos++;
+                            bool success = sequenceEncoder.TryDecode(wordByteBuffer.Slice(0, wordByteLength), ba.Slice(0, encodedLength), stemDecodedBuffer, out int stemByteCount);
+                            if (!success)
+                            {
+                                throw new InvalidOperationException("The stem sequence decoder produced more decoded bytes than its maximum byte count.");
+                            }
+                            result.StemBytesBuffer.Advance(stemByteCount);
 
-                        /*
-                         * Decode the tag data.
-                         */
-                        int tagSize = bbSize - sepPos;
-                        if (tagSize > 0)
-                        {
-                            wordData.tagBuffer = BufferUtils.ClearAndEnsureCapacity(wordData.tagBuffer, tagSize);
-                            wordData.tagBuffer.Put(ba, sepPos, tagSize);
-                            wordData.tagBuffer.Flip();
+                            // Skip separator character.
+                            sepPos++;
+
+                            /*
+                            * Decode the tag data.
+                            */
+                            int tagSize = bbSize - sepPos;
+                            int tagByteOffset = result.TagBytesBuffer.WrittenCount;
+                            int tagByteCount = tagSize;
+
+                            if (tagSize > 0)
+                            {
+                                Span<byte> tagByteDestination = result.TagBytesBuffer.GetSpan(tagSize);
+                                ba.Slice(sepPos, tagSize).CopyTo(tagByteDestination);
+                                result.TagBytesBuffer.Advance(tagSize);
+                            }
+
+                            result.AddEntry(
+                                stemByteOffset,
+                                stemByteCount,
+                                tagByteOffset,
+                                tagByteCount);
                         }
                     }
-
-                    formsList.Wrap(forms, 0, formsCount);
                 }
+                return result;
             }
-            else
-            {
-                /*
-                 * this case is somewhat confusing: we should have hit the separator
-                 * first... I don't really know how to deal with it at the time
-                 * being.
-                 */
-            }
-            return formsList;
-        }
-
-        /// <summary>
-        /// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
-        /// followed by a separator. The result is a stem (decompressed accordingly
-        /// to the dictionary's specification) and an optional tag data.
-        /// </summary>
-        public IList<WordData> Lookup(StringBuilder word)
-        {
-            byte separator = dictionaryMetadata.Separator;
-#pragma warning disable 612, 618
-            int prefixBytes = sequenceEncoder.PrefixBytes;
-#pragma warning restore 612, 618
-
-            if (dictionaryMetadata.InputConversionPairs.Any())
-            {
-                word = ApplyReplacements(word, dictionaryMetadata.InputConversionPairs);
-            }
-
-            // Reset the output list to zero length.
-            formsList.Wrap(forms, 0, 0);
-
-            // Encode word characters into bytes in the same encoding as the FSA's.
-            charBuffer = BufferUtils.ClearAndEnsureCapacity(charBuffer, word.Length);
-            for (int i = 0; i < word.Length; i++)
-            {
-                char chr = word[i];
-                if (chr == separatorChar)
-                {
-                    // No valid input can contain the separator.
-                    return formsList;
-                }
-                charBuffer.Put(chr);
-            }
-            charBuffer.Flip();
-            try
-            {
-                byteBuffer = BufferUtils.CharsToBytes(encoder, charBuffer, byteBuffer);
-            }
-            catch (UnmappableInputException)
+            catch (EncoderFallbackException)
             {
                 // This should be a rare occurrence, but if it happens it means there is no way
                 // the dictionary can contain the input word.
-                return formsList;
+                result.Clear();
+                return result;
             }
-
-            // Try to find a partial match in the dictionary.
-            MatchResult match = matcher.Match(matchResult, byteBuffer
-                .Array, 0, byteBuffer.Remaining, rootNode);
-
-            if (match.Kind == MatchResult.SequenceIsAPrefix)
-            {
-                /*
-                 * The entire sequence exists in the dictionary. A separator should
-                 * be the next symbol.
-                 */
-                int arc = fsa.GetArc(match.Node, separator);
-
-                /*
-                 * The situation when the arc points to a final node should NEVER
-                 * happen. After all, we want the word to have SOME base form.
-                 */
-                if (arc != 0 && !fsa.IsArcFinal(arc))
-                {
-                    // There is such a word in the dictionary. Return its base forms.
-                    int formsCount = 0;
-
-                    finalStatesIterator.RestartFrom(fsa.GetEndNode(arc));
-                    while (finalStatesIterator.MoveNext())
-                    {
-                        ByteBuffer bb = finalStatesIterator.Current;
-                        byte[] ba = bb.Array;
-                        int bbSize = bb.Remaining;
-
-                        if (formsCount >= forms.Length)
-                        {
-                            //forms = Arrays.CopyOf(forms, forms.Length + EXPAND_SIZE);
-                            Array.Resize(ref forms, forms.Length + ExpandSize);
-                            for (int k = 0; k < forms.Length; k++)
-                            {
-                                if (forms[k] == null)
-                                    forms[k] = new WordData(decoder);
-                            }
-                        }
-
-                        /*
-                         * Now, expand the prefix/ suffix 'compression' and store
-                         * the base form.
-                         */
-                        WordData wordData = forms[formsCount++];
-                        if (!dictionaryMetadata.OutputConversionPairs.Any())
-                        {
-                            wordData.Update(byteBuffer, word);
-                        }
-                        else
-                        {
-                            wordData.Update(byteBuffer, ApplyReplacements(word, dictionaryMetadata.OutputConversionPairs));
-                        }
-
-                        /*
-                         * Find the separator byte's position splitting the inflection instructions
-                         * from the tag.
-                         */
-                        Debug.Assert(prefixBytes <= bbSize, sequenceEncoder.GetType() + " >? " + bbSize);
-                        int sepPos;
-                        for (sepPos = prefixBytes; sepPos < bbSize; sepPos++)
-                        {
-                            if (ba[sepPos] == separator)
-                            {
-                                break;
-                            }
-                        }
-
-                        /*
-                         * Decode the stem into stem buffer.
-                         */
-                        wordData.stemBuffer = sequenceEncoder.Decode(wordData.stemBuffer,
-                                                                 byteBuffer,
-                                                                 ByteBuffer.Wrap(ba, 0, sepPos));
-
-                        // Skip separator character.
-                        sepPos++;
-
-                        /*
-                         * Decode the tag data.
-                         */
-                        int tagSize = bbSize - sepPos;
-                        if (tagSize > 0)
-                        {
-                            wordData.tagBuffer = BufferUtils.ClearAndEnsureCapacity(wordData.tagBuffer, tagSize);
-                            wordData.tagBuffer.Put(ba, sepPos, tagSize);
-                            wordData.tagBuffer.Flip();
-                        }
-                    }
-
-                    formsList.Wrap(forms, 0, formsCount);
-                }
-            }
-            else
-            {
-                /*
-                 * this case is somewhat confusing: we should have hit the separator
-                 * first... I don't really know how to deal with it at the time
-                 * being.
-                 */
-            }
-            return formsList;
-        }
-
-        /// <summary>
-        /// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
-        /// followed by a separator. The result is a stem (decompressed accordingly
-        /// to the dictionary's specification) and an optional tag data.
-        /// </summary>
-        public IList<WordData> Lookup(string word)
-        {
-            byte separator = dictionaryMetadata.Separator;
-#pragma warning disable 612, 618
-            int prefixBytes = sequenceEncoder.PrefixBytes;
-#pragma warning restore 612, 618
-
-            if (dictionaryMetadata.InputConversionPairs.Any())
-            {
-                word = ApplyReplacements(word, dictionaryMetadata.InputConversionPairs);
-            }
-
-            // Reset the output list to zero length.
-            formsList.Wrap(forms, 0, 0);
-
-            // Encode word characters into bytes in the same encoding as the FSA's.
-            charBuffer = BufferUtils.ClearAndEnsureCapacity(charBuffer, word.Length);
-            for (int i = 0; i < word.Length; i++)
-            {
-                char chr = word[i];
-                if (chr == separatorChar)
-                {
-                    // No valid input can contain the separator.
-                    return formsList;
-                }
-                charBuffer.Put(chr);
-            }
-            charBuffer.Flip();
-            try
-            {
-                byteBuffer = BufferUtils.CharsToBytes(encoder, charBuffer, byteBuffer);
-            }
-            catch (UnmappableInputException)
-            {
-                // This should be a rare occurrence, but if it happens it means there is no way
-                // the dictionary can contain the input word.
-                return formsList;
-            }
-
-            // Try to find a partial match in the dictionary.
-            MatchResult match = matcher.Match(matchResult, byteBuffer
-                .Array, 0, byteBuffer.Remaining, rootNode);
-
-            if (match.Kind == MatchResult.SequenceIsAPrefix)
-            {
-                /*
-                 * The entire sequence exists in the dictionary. A separator should
-                 * be the next symbol.
-                 */
-                int arc = fsa.GetArc(match.Node, separator);
-
-                /*
-                 * The situation when the arc points to a final node should NEVER
-                 * happen. After all, we want the word to have SOME base form.
-                 */
-                if (arc != 0 && !fsa.IsArcFinal(arc))
-                {
-                    // There is such a word in the dictionary. Return its base forms.
-                    int formsCount = 0;
-
-                    finalStatesIterator.RestartFrom(fsa.GetEndNode(arc));
-                    while (finalStatesIterator.MoveNext())
-                    {
-                        ByteBuffer bb = finalStatesIterator.Current;
-                        byte[] ba = bb.Array;
-                        int bbSize = bb.Remaining;
-
-                        if (formsCount >= forms.Length)
-                        {
-                            //forms = Arrays.CopyOf(forms, forms.Length + EXPAND_SIZE);
-                            Array.Resize(ref forms, forms.Length + ExpandSize);
-                            for (int k = 0; k < forms.Length; k++)
-                            {
-                                if (forms[k] == null)
-                                    forms[k] = new WordData(decoder);
-                            }
-                        }
-
-                        /*
-                         * Now, expand the prefix/ suffix 'compression' and store
-                         * the base form.
-                         */
-                        WordData wordData = forms[formsCount++];
-                        if (!dictionaryMetadata.OutputConversionPairs.Any())
-                        {
-                            wordData.Update(byteBuffer, word);
-                        }
-                        else
-                        {
-                            wordData.Update(byteBuffer, ApplyReplacements(word, dictionaryMetadata.OutputConversionPairs));
-                        }
-
-                        /*
-                         * Find the separator byte's position splitting the inflection instructions
-                         * from the tag.
-                         */
-                        Debug.Assert(prefixBytes <= bbSize, sequenceEncoder.GetType() + " >? " + bbSize);
-                        int sepPos;
-                        for (sepPos = prefixBytes; sepPos < bbSize; sepPos++)
-                        {
-                            if (ba[sepPos] == separator)
-                            {
-                                break;
-                            }
-                        }
-
-                        /*
-                         * Decode the stem into stem buffer.
-                         */
-                        wordData.stemBuffer = sequenceEncoder.Decode(wordData.stemBuffer,
-                                                                 byteBuffer,
-                                                                 ByteBuffer.Wrap(ba, 0, sepPos));
-
-                        // Skip separator character.
-                        sepPos++;
-
-                        /*
-                         * Decode the tag data.
-                         */
-                        int tagSize = bbSize - sepPos;
-                        if (tagSize > 0)
-                        {
-                            wordData.tagBuffer = BufferUtils.ClearAndEnsureCapacity(wordData.tagBuffer, tagSize);
-                            wordData.tagBuffer.Put(ba, sepPos, tagSize);
-                            wordData.tagBuffer.Flip();
-                        }
-                    }
-
-                    formsList.Wrap(forms, 0, formsCount);
-                }
-            }
-            else
-            {
-                /*
-                 * this case is somewhat confusing: we should have hit the separator
-                 * first... I don't really know how to deal with it at the time
-                 * being.
-                 */
-            }
-            return formsList;
         }
 
         /// <summary>
@@ -715,79 +260,29 @@ namespace Morfologik.Stemming
         /// <param name="word">The word to apply replacements to.</param>
         /// <param name="replacements">A dictionary of replacements (from-&gt;to).</param>
         /// <returns>New string with all replacements applied.</returns>
-        public static ICharSequence ApplyReplacements(ICharSequence word, IDictionary<string, string> replacements)
+        public static string ApplyReplacements(ReadOnlySpan<char> word, IDictionary<string, string> replacements) // Morfologik.Stemming TODO: Ideally, the string would be written to a Span<char> on the public API - need to reassess
         {
             // quite horrible from performance point of view; this should really be a transducer.
-            StringBuilder sb = new StringBuilder();
-            sb.Append(charSequence: word);
-            foreach (var e in replacements)
-            {
-                sb.Replace(e.Key, e.Value);
-            }
-            return sb.AsCharSequence();
-        }
-
-        /// <summary>
-        /// Apply partial string replacements from a given dictionary.
-        /// <para/>
-        /// Useful if the word needs to be normalized somehow (i.e., ligatures,
-        /// apostrophes and such).
-        /// </summary>
-        /// <param name="word">The word to apply replacements to.</param>
-        /// <param name="replacements">A dictionary of replacements (from-&gt;to).</param>
-        /// <returns>New string with all replacements applied.</returns>
-        public static char[] ApplyReplacements(char[] word, IDictionary<string, string> replacements)
-        {
-            // quite horrible from performance point of view; this should really be a transducer.
-            StringBuilder sb = new StringBuilder();
-            sb.Append(word);
-            foreach (var e in replacements)
-            {
-                sb.Replace(e.Key, e.Value);
-            }
-            return sb.ToString().ToCharArray();
-        }
-
-        /// <summary>
-        /// Apply partial string replacements from a given dictionary.
-        /// <para/>
-        /// Useful if the word needs to be normalized somehow (i.e., ligatures,
-        /// apostrophes and such).
-        /// </summary>
-        /// <param name="word">The word to apply replacements to.</param>
-        /// <param name="replacements">A dictionary of replacements (from-&gt;to).</param>
-        /// <returns>New string with all replacements applied.</returns>
-        public static StringBuilder ApplyReplacements(StringBuilder word, IDictionary<string, string> replacements)
-        {
-            // quite horrible from performance point of view; this should really be a transducer.
-            StringBuilder sb = new StringBuilder();
-            sb.Append(word);
-            foreach (var e in replacements)
-            {
-                sb.Replace(e.Key, e.Value);
-            }
-            return sb;
-        }
-
-        /// <summary>
-        /// Apply partial string replacements from a given dictionary.
-        /// <para/>
-        /// Useful if the word needs to be normalized somehow (i.e., ligatures,
-        /// apostrophes and such).
-        /// </summary>
-        /// <param name="word">The word to apply replacements to.</param>
-        /// <param name="replacements">A dictionary of replacements (from-&gt;to).</param>
-        /// <returns>New string with all replacements applied.</returns>
-        public static string ApplyReplacements(string word, IDictionary<string, string> replacements)
-        {
-            // quite horrible from performance point of view; this should really be a transducer.
-            StringBuilder sb = new StringBuilder();
-            sb.Append(word);
-            foreach (var e in replacements)
-            {
-                sb.Replace(e.Key, e.Value);
-            }
+            using PooledTextBuilder sb = new(word, capacity: word.Length + 16);
+            ApplyReplacements(sb, replacements);
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Apply partial string replacements from a given dictionary.
+        /// <para/>
+        /// Useful if the word needs to be normalized somehow (i.e., ligatures,
+        /// apostrophes and such).
+        /// </summary>
+        /// <param name="word">The word to apply replacements to.</param>
+        /// <param name="replacements">A dictionary of replacements (from-&gt;to).</param>
+        /// <returns>New string with all replacements applied.</returns>
+        private static void ApplyReplacements(PooledTextBuilder word, IDictionary<string, string> replacements)
+        {
+            foreach (var e in replacements)
+            {
+                word.Replace(e.Key, e.Value);
+            }
         }
 
         /// <summary>

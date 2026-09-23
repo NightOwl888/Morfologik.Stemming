@@ -1,0 +1,368 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text;
+
+namespace Morfologik.Stemming
+{
+    /// <summary>
+    /// Contains the results of a dictionary lookup in buffer that can be
+    /// reused for additional lookup operations.
+    /// </summary>
+    public sealed class DictionaryLookupResult : IWordDataStorage, IList<WordData>, IEnumerable<WordData>
+    {
+        private struct Entry
+        {
+            public bool IsStemLoaded;
+            public int StemCharsOffset;
+            public int StemCharsLength;
+
+            public bool IsTagLoaded;
+            public int TagCharsOffset;
+            public int TagCharsLength;
+
+            public int StemBytesOffset;
+            public int StemBytesLength;
+            public int TagBytesOffset;
+            public int TagBytesLength;
+        }
+
+        private readonly ArrayBufferWriter<char> wordCharsBuffer;
+        private readonly ArrayBufferWriter<char> stemCharsBuffer;
+        private readonly ArrayBufferWriter<char> tagCharsBuffer;
+
+        private readonly ArrayBufferWriter<byte> wordBytesBuffer;
+        private readonly ArrayBufferWriter<byte> stemBytesBuffer;
+        private readonly ArrayBufferWriter<byte> tagBytesBuffer;
+        private readonly ArrayBufferWriter<Entry> entries;
+
+        private Encoding? decoder;
+
+        /// <summary>
+        /// Initializes a new instance of a <see cref="DictionaryLookupResult"/>.
+        /// </summary>
+        public DictionaryLookupResult()
+        {
+            wordCharsBuffer = new ArrayBufferWriter<char>();
+            stemCharsBuffer = new ArrayBufferWriter<char>();
+            tagCharsBuffer = new ArrayBufferWriter<char>();
+            wordBytesBuffer = new ArrayBufferWriter<byte>();
+            stemBytesBuffer = new ArrayBufferWriter<byte>();
+            tagBytesBuffer = new ArrayBufferWriter<byte>();
+            entries = new ArrayBufferWriter<Entry>();
+        }
+
+        /// <summary>
+        /// Removes all results while retaining the buffers' allocated storage.
+        /// </summary>
+        internal void Clear()
+        {
+            wordCharsBuffer.Clear();
+            stemCharsBuffer.Clear();
+            tagCharsBuffer.Clear();
+            wordBytesBuffer.Clear();
+            stemBytesBuffer.Clear();
+            tagBytesBuffer.Clear();
+            entries.Clear();
+            decoder = null;
+        }
+
+        /// <summary>
+        /// Gets the number of results in this lookup result.
+        /// </summary>
+        public int Count => entries.WrittenCount;
+
+        /// <summary>
+        /// Gets the underlying <see cref="WordData"/> at the specified <paramref name="index"/>.
+        /// </summary>
+        /// <param name="index">The zero-based index of the element to get.</param>
+        /// <value>The element at the specified index.</value>
+        public WordData this[int index]
+        {
+            get
+            {
+                if ((uint)index >= (uint)Count)
+                    throw new ArgumentOutOfRangeException(nameof(index));
+
+                return new(this, index);
+            }
+        }
+
+        /// <summary>
+        /// Returns an enumerator over the <see cref="WordData"/> elemements associated
+        /// with the word.
+        /// </summary>
+        /// <returns></returns>
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(this);
+        }
+
+        IEnumerator<WordData> IEnumerable<WordData>.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        /// <summary>
+        /// An enumerator over the <see cref="WordData"/> elements associated with
+        /// the word.
+        /// </summary>
+        public struct Enumerator : IEnumerator<WordData>
+        {
+            private readonly DictionaryLookupResult result;
+            private readonly WordData wordData;
+            private int index;
+
+            internal Enumerator(DictionaryLookupResult result)
+            {
+                this.result = result;
+                wordData = new WordData(result);
+                index = -1;
+            }
+
+            public WordData Current => wordData;
+
+            object IEnumerator.Current => Current;
+
+            /// <summary>
+            /// Advances the enumerator to the next <see cref="WordData"/>
+            /// element of the list.
+            /// </summary>
+            /// <returns></returns>
+            public bool MoveNext()
+            {
+                int nextIndex = index + 1;
+                if (nextIndex >= result.Count)
+                    return false;
+
+                index = nextIndex;
+                wordData.SetIndex(index);
+                return true;
+            }
+
+            void IEnumerator.Reset()
+            {
+                index = -1;
+            }
+
+            /// <summary>
+            /// Releases all resources used by the <see cref="Enumerator"/>.
+            /// </summary>
+            public void Dispose()
+            {
+                // Intentionally empty
+            }
+        }
+
+        internal ArrayBufferWriter<char> WordCharsBuffer => wordCharsBuffer;
+        internal ArrayBufferWriter<byte> WordBytesBuffer => wordBytesBuffer;
+        internal ArrayBufferWriter<byte> StemBytesBuffer => stemBytesBuffer;
+        internal ArrayBufferWriter<byte> TagBytesBuffer => tagBytesBuffer;
+
+
+        internal ReadOnlyMemory<char> GetStem(int index)
+        {
+            Entry entry = entries.WrittenSpan[index];
+            return stemCharsBuffer.WrittenMemory.Slice(entry.StemCharsOffset, entry.StemCharsLength);
+        }
+
+        internal void SetStemOffsets(int index, int offset, int length)
+        {
+            ref Entry entry = ref entries.GetReference(index);
+            entry.StemCharsOffset = offset;
+            entry.StemCharsLength = length;
+            entry.IsStemLoaded = true;
+        }
+
+        internal bool IsStemLoaded(int index)
+        {
+            Entry entry = entries.WrittenSpan[index];
+            return entry.IsStemLoaded;
+        }
+
+        internal ReadOnlyMemory<char> GetTag(int index)
+        {
+            Entry entry = entries.WrittenSpan[index];
+            return tagCharsBuffer.WrittenMemory.Slice(entry.TagCharsOffset, entry.TagCharsLength);
+        }
+
+        internal void SetTagOffsets(int index, int offset, int length)
+        {
+            ref Entry entry = ref entries.GetReference(index);
+            entry.TagCharsOffset = offset;
+            entry.TagCharsLength = length;
+            entry.IsTagLoaded = true;
+        }
+
+        internal bool IsTagLoaded(int index)
+        {
+            Entry entry = entries.WrittenSpan[index];
+            return entry.IsTagLoaded;
+        }
+
+        internal ReadOnlyMemory<byte> GetStemBytes(int index)
+        {
+            Entry entry = entries.WrittenSpan[index];
+            return stemBytesBuffer.WrittenMemory.Slice(entry.StemBytesOffset, entry.StemBytesLength);
+        }
+
+        internal ReadOnlyMemory<byte> GetTagBytes(int index)
+        {
+            Entry entry = entries.WrittenSpan[index];
+            return tagBytesBuffer.WrittenMemory.Slice(entry.TagBytesOffset, entry.TagBytesLength);
+        }
+
+        internal void SetWord(scoped ReadOnlySpan<char> word)
+        {
+            Span<char> temp = wordCharsBuffer.GetSpan(word.Length);
+            word.CopyTo(temp);
+            wordCharsBuffer.Advance(word.Length);
+        }
+
+        internal void SetDecoder(Encoding decoder)
+        {
+            Debug.Assert(decoder is not null);
+            this.decoder = decoder;
+        }
+
+        internal Encoding Decoder
+        {
+            get
+            {
+                Debug.Assert(decoder is not null);
+                return decoder!;
+            }
+        }
+
+        internal void AddEntry(int stemBytesOffset, int stemBytesLength, int tagBytesOffset, int tagBytesLength)
+        {
+            Span<Entry> destination = entries.GetSpan(1);
+
+            destination[0] = new Entry
+            {
+                StemBytesOffset = stemBytesOffset,
+                StemBytesLength = stemBytesLength,
+                TagBytesOffset = tagBytesOffset,
+                TagBytesLength = tagBytesLength
+            };
+
+            entries.Advance(1);
+        }
+
+        #region IWordDataStorage Members
+
+        Encoding IWordDataStorage.Decoder => Decoder;
+
+
+        ReadOnlyMemory<char> IWordDataStorage.Word => wordCharsBuffer.WrittenMemory;
+
+        ReadOnlyMemory<byte> IWordDataStorage.WordBytes => wordBytesBuffer.WrittenMemory;
+
+
+        ReadOnlyMemory<char> IWordDataStorage.GetStem(int index)
+            => GetStem(index);
+
+        ReadOnlyMemory<byte> IWordDataStorage.GetStemBytes(int index)
+            => GetStemBytes(index);
+
+        ArrayBufferWriter<char> IWordDataStorage.StemCharBuffer => stemCharsBuffer;
+
+        void IWordDataStorage.SetStemOffsets(int index, int offset, int length)
+            => SetStemOffsets(index, offset, length);
+
+        bool IWordDataStorage.IsStemLoaded(int index)
+            => IsStemLoaded(index);
+
+
+        ReadOnlyMemory<char> IWordDataStorage.GetTag(int index)
+            => GetTag(index);
+
+        ReadOnlyMemory<byte> IWordDataStorage.GetTagBytes(int index)
+            => GetTagBytes(index);
+
+        ArrayBufferWriter<char> IWordDataStorage.TagCharBuffer => tagCharsBuffer;
+
+        void IWordDataStorage.SetTagOffsets(int index, int offset, int length)
+            => SetTagOffsets(index, offset, length);
+
+        bool IWordDataStorage.IsTagLoaded(int index)
+            => IsTagLoaded(index);
+
+        #endregion IWordDataStorage Members
+
+
+        #region IList<WordData> Members
+
+        int ICollection<WordData>.Count => Count;
+
+        bool ICollection<WordData>.IsReadOnly => true;
+
+        WordData IList<WordData>.this[int index]
+        {
+            get => this[index];
+            set => throw new NotSupportedException();
+        }
+
+        int IList<WordData>.IndexOf(WordData item)
+        {
+            throw new NotSupportedException();
+        }
+
+        void IList<WordData>.Insert(int index, WordData item)
+        {
+            throw new NotSupportedException();
+        }
+
+        void IList<WordData>.RemoveAt(int index)
+        {
+            throw new NotSupportedException();
+        }
+
+        void ICollection<WordData>.Add(WordData item)
+        {
+            throw new NotSupportedException();
+        }
+
+        void ICollection<WordData>.Clear()
+        {
+            // NOTE: Our Clear() method is only meant for internal use.
+            // It doesn't actually free any memory, it is just meant to reset
+            // the buffers to 0 for the next load.
+            throw new NotSupportedException();
+        }
+
+        bool ICollection<WordData>.Contains(WordData item)
+        {
+            throw new NotSupportedException();
+        }
+
+        void ICollection<WordData>.CopyTo(WordData[] array, int arrayIndex)
+        {
+            if (array is null)
+                throw new ArgumentNullException(nameof(array));
+            if (arrayIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+            if (array.Length - arrayIndex < Count)
+                throw new ArgumentException(
+                    "The number of elements in the source collection is greater than the available space in the destination array.");
+
+            for (int i = 0; i < Count; i++)
+            {
+                array[arrayIndex + i] = new WordData(this[i]);
+            }
+        }
+
+        bool ICollection<WordData>.Remove(WordData item)
+        {
+            throw new NotSupportedException();
+        }
+
+        #endregion IList<WordData> Members
+    }
+}

@@ -53,7 +53,7 @@ steps:
 
 - template: publish-test-results.yml
   parameters:
-    testProjectName: 'Morfologik.Stemming.Tests'
+    testProjectName: 'Morfologik.Fsa.Tests'
     framework: '${{ parameters.framework }}'
     osName: '${{ parameters.osName }}'
     testPlatform: '${{ parameters.testPlatform }}'
@@ -64,6 +64,16 @@ steps:
 - template: publish-test-results.yml
   parameters:
     testProjectName: 'Morfologik.Polish.Tests'
+    framework: '${{ parameters.framework }}'
+    osName: '${{ parameters.osName }}'
+    testPlatform: '${{ parameters.testPlatform }}'
+    testResultsFormat: '${{ parameters.testResultsFormat }}'
+    testResultsArtifactName: '${{ parameters.testResultsArtifactName }}'
+    testResultsFileName: '${{ parameters.testResultsFileName }}'
+
+- template: publish-test-results.yml
+  parameters:
+    testProjectName: 'Morfologik.Stemming.Tests'
     framework: '${{ parameters.framework }}'
     osName: '${{ parameters.osName }}'
     testPlatform: '${{ parameters.testPlatform }}'

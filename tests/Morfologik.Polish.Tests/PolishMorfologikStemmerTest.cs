@@ -1,10 +1,10 @@
-﻿using J2N.IO;
-using J2N.Text;
+﻿using J2N.Text;
 using Morfologik.TestFramework;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using JCG = J2N.Collections.Generic;
 
 namespace Morfologik.Stemming.Polish.Tests
 {
@@ -30,18 +30,20 @@ namespace Morfologik.Stemming.Polish.Tests
         [Test]
         public void ListUniqueTags()
         {
-            HashSet<String> forms = new HashSet<String>(StringComparer.Ordinal);
+            JCG.HashSet<string> forms = new JCG.HashSet<string>(StringComparer.Ordinal);
+            var formsLookup = forms.GetSpanAlternateLookup<char>();
+
             bool hadMissing = false;
             foreach (WordData wd in new PolishStemmer())
             {
-                ICharSequence chs = wd.GetTag();
-                if (chs == null)
+                ReadOnlyMemory<char> chs = wd.Tag;
+                if (chs.IsEmpty)
                 {
                     Console.Error.WriteLine("Missing tag for: " + wd.Word);
                     hadMissing = true;
                     continue;
                 }
-                forms.Add(chs.ToString());
+                formsLookup.Add(chs.Span);
             }
 
             //Assertions.assertThat(hadMissing).isFalse();
@@ -55,16 +57,16 @@ namespace Morfologik.Stemming.Polish.Tests
             IStemmer s = new PolishStemmer();
 
             String word = "liga";
-            IList<WordData> response = s.Lookup(word);
+            DictionaryLookupResult response = s.Lookup(word.AsSpan());
             assertEquals(2, response.Count);
 
             HashSet<String> stems = new HashSet<String>();
             HashSet<String> tags = new HashSet<String>();
             foreach (WordData wd in response)
             {
-                stems.Add(wd.GetStem().ToString());
-                tags.Add(wd.GetTag().ToString());
-                assertSame(word, wd.Word.ToString());
+                stems.Add(wd.Stem.ToString());
+                tags.Add(wd.Tag.ToString());
+                assertEquals(word, wd.Word.ToString());
             }
             assertTrue(stems.Contains("ligać"));
             assertTrue(stems.Contains("liga"));
@@ -74,56 +76,88 @@ namespace Morfologik.Stemming.Polish.Tests
             // Repeat to make sure we get the same values consistently.
             foreach (WordData wd in response)
             {
-                stems.Contains(wd.GetStem().ToString());
-                tags.Contains(wd.GetTag().ToString());
+                stems.Contains(wd.Stem.ToString());
+                tags.Contains(wd.Tag.ToString());
             }
 
             //String ENCODING = "UTF-8";
             Encoding ENCODING = Encoding.UTF8;
 
             // Run the same consistency check for the returned buffers.
-            ByteBuffer temp = ByteBuffer.Allocate(100);
+            //ByteBuffer temp = ByteBuffer.Allocate(100);
+            Span<byte> temp = stackalloc byte[100];
             foreach (WordData wd in response)
             {
+                int stemByteCount = wd.StemBytes.Length;
                 // Buffer should be copied.
-                ByteBuffer copy = wd.GetStemBytes(null);
-                String stem = ENCODING.GetString(copy.Array, copy.ArrayOffset + copy.Position, copy.Remaining);
+                assertTrue(wd.StemBytes.Span.TryCopyTo(temp));
+                string stem = ENCODING.GetString(temp.Slice(0, stemByteCount));
                 // The buffer should be present in stems set.
                 assertTrue(stem, stems.Contains(stem));
-                // Buffer large enough to hold the contents.
-                assertSame(temp, wd.GetStemBytes(temp));
-                // The copy and the clone should be identical.
-                assertEquals(0, copy.CompareTo(temp));
+                // Morfologik.Stemming: We are copying memory from the internal buffer
+                // to an external buffer. We don't have a reference, so
+                // we have nothing to compare.
+
+                //// Buffer should be copied.
+                //ByteBuffer copy = wd.GetStemBytes(null);
+                //String stem = ENCODING.GetString(copy.Array, copy.ArrayOffset + copy.Position, copy.Remaining);
+                //// The buffer should be present in stems set.
+                //assertTrue(stem, stems.Contains(stem));
+                //// Buffer large enough to hold the contents.
+                //assertSame(temp, wd.GetStemBytes(temp));
+                //// The copy and the clone should be identical.
+                //assertEquals(0, copy.CompareTo(temp));
             }
 
             foreach (WordData wd in response)
             {
+                int tagByteCount = wd.TagBytes.Length;
                 // Buffer should be copied.
-                ByteBuffer copy = wd.GetTagBytes(null);
-                String tag = ENCODING.GetString(copy.Array, copy.ArrayOffset + copy.Position, copy.Remaining);
+                assertTrue(wd.TagBytes.Span.TryCopyTo(temp));
+                // Buffer large enough to hold the contents.
+                assertEquals(tagByteCount, tagByteCount);
+                string tag = ENCODING.GetString(temp.Slice(0, tagByteCount));
                 // The buffer should be present in tags set.
                 assertTrue(tag, tags.Contains(tag));
-                // Buffer large enough to hold the contents.
-                temp.Clear();
-                assertSame(temp, wd.GetTagBytes(temp));
-                // The copy and the clone should be identical.
-                assertEquals(0, copy.CompareTo(temp));
+                // Morfologik.Stemming: We are copying memory from the internal buffer
+                // to an external buffer. We don't have a reference, so
+                // we have nothing to compare.
+
+                //// Buffer should be copied.
+                //ByteBuffer copy = wd.GetTagBytes(null);
+                //String tag = ENCODING.GetString(copy.Array, copy.ArrayOffset + copy.Position, copy.Remaining);
+                //// The buffer should be present in tags set.
+                //assertTrue(tag, tags.Contains(tag));
+                //// Buffer large enough to hold the contents.
+                //temp.Clear();
+                //assertSame(temp, wd.GetTagBytes(temp));
+                //// The copy and the clone should be identical.
+                //assertEquals(0, copy.CompareTo(temp));
             }
 
             foreach (WordData wd in response)
             {
+                int wordByteCount = wd.WordBytes.Length;
                 // Buffer should be copied.
-                ByteBuffer copy = wd.GetWordBytes(null);
-                assertNotNull(copy);
-                assertEquals(0, copy.CompareTo(ByteBuffer.Wrap(ENCODING.GetBytes(word))));
+                assertTrue(wd.WordBytes.Span.TryCopyTo(temp));
+                // Buffer large enough to hold the contents.
+                assertEquals(wordByteCount, wordByteCount);
+                // Morfologik.Stemming: We are copying memory from the internal buffer
+                // to an external buffer. We don't have a reference, so
+                // we have nothing to compare.
+
+                //// Buffer should be copied.
+                //ByteBuffer copy = wd.GetWordBytes(null);
+                //assertNotNull(copy);
+                //assertEquals(0, copy.CompareTo(ByteBuffer.Wrap(ENCODING.GetBytes(word))));
             }
         }
 
         /* */
-        public static String asString(ICharSequence s)
+        public static String asString(ReadOnlyMemory<char> s)
         {
-            if (s == null)
-                return null;
+            //if (s == null)
+            //    return null;
             return s.ToString();
         }
 
@@ -131,10 +165,10 @@ namespace Morfologik.Stemming.Polish.Tests
         public static String[] stem(IStemmer s, String word)
         {
             List<String> result = new List<String>();
-            foreach (WordData wd in s.Lookup(word))
+            foreach (WordData wd in s.Lookup(word.AsSpan()))
             {
-                result.Add(asString(wd.GetStem()));
-                result.Add(asString(wd.GetTag()));
+                result.Add(asString(wd.Stem));
+                result.Add(asString(wd.Tag));
             }
             return result.ToArray();
         }

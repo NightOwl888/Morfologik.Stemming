@@ -1,5 +1,4 @@
-﻿using J2N.IO;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -161,53 +160,50 @@ namespace Morfologik.Fsa
         [SuppressMessage("Microsoft.Performance", "CA1819", Justification = "design requires some writable array properties")]
         public byte[] LabelMapping { get; private set; }
 
+
         /// <summary>
         /// Creates a new automaton, reading it from a file in FSA format, version 5.
         /// </summary>
         internal CFSA(Stream stream)
         {
-            using (DataInputStream input = new DataInputStream(stream, true))
+            // Skip legacy header fields.
+            stream.ReadByteRequired();  // filler
+            stream.ReadByteRequired();  // annotation
+            byte hgtl = stream.ReadByteRequired();
+
+            /*
+             * Determine if the automaton was compiled with NUMBERS. If so, modify
+             * ctl and goto fields accordingly.
+             */
+            flags = FSAFlags.Flexible | FSAFlags.StopBit | FSAFlags.NextBit;
+            if ((hgtl & 0xf0) != 0)
             {
-                // Skip legacy header fields.
-                input.ReadByte();  // filler
-                input.ReadByte();  // annotation
-                byte hgtl = (byte)input.ReadByte();
-
-                /*
-                 * Determine if the automaton was compiled with NUMBERS. If so, modify
-                 * ctl and goto fields accordingly.
-                 */
-                flags = FSAFlags.Flexible | FSAFlags.StopBit | FSAFlags.NextBit;
-                if ((hgtl & 0xf0) != 0)
-                {
-                    this.NodeDataLength = (hgtl >>> 4) & 0x0f;
-                    this.GoToLength = hgtl & 0x0f;
-                    flags |= FSAFlags.Numbers;
-                }
-                else
-                {
-                    this.NodeDataLength = 0;
-                    this.GoToLength = hgtl & 0x0f;
-                }
-
-                /*
-                 * Read mapping dictionary.
-                 */
-                LabelMapping = new byte[1 << 5];
-                input.ReadFully(LabelMapping);
-
-                /*
-                 * Read arcs' data.
-                 */
-                Arcs = ReadRemaining(input);
+                this.NodeDataLength = (hgtl >>> 4) & 0x0f;
+                this.GoToLength = hgtl & 0x0f;
+                flags |= FSAFlags.Numbers;
             }
+            else
+            {
+                this.NodeDataLength = 0;
+                this.GoToLength = hgtl & 0x0f;
+            }
+
+            /*
+             * Read mapping dictionary.
+             */
+            LabelMapping = new byte[1 << 5];
+            stream.ReadExactly(LabelMapping);
+
+            /*
+             * Read arcs' data.
+             */
+            Arcs = ReadRemaining(stream);
+
+            // Load the root node
+            RootNode = GetRootNode();
         }
 
-        /// <summary>
-        /// Returns the start node of this automaton. May return <c>0</c> if
-        /// the start node is also an end node.
-        /// </summary>
-        public override int GetRootNode()
+        private int GetRootNode()
         {
             // Skip dummy node marking terminating state.
             int epsilonNode = SkipArc(GetFirstArc(0));
@@ -215,6 +211,12 @@ namespace Morfologik.Fsa
             // And follow the epsilon node's first (and only) arc.
             return GetDestinationNodeOffset(GetFirstArc(epsilonNode));
         }
+
+        /// <summary>
+        /// Returns the start node of this automaton. May return <c>0</c> if
+        /// the start node is also an end node.
+        /// </summary>
+        public override int RootNode { get; }
 
         /// <summary>
         /// Returns the identifier of the first arc leaving <paramref name="node"/>

@@ -255,7 +255,7 @@ namespace Morfologik.Stemming
         public static readonly DictionaryAttribute<Encoding> Encoding = new DictionaryAttribute<Encoding>("fsa.dict.encoding", DictionaryAttribute.Encoding,
             fromString: (string propertyName, string encodingName) =>
             {
-                return System.Text.Encoding.GetEncoding(encodingName);
+                return System.Text.Encoding.GetEncoding(encodingName, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
             });
 
         /// <summary>
@@ -432,10 +432,10 @@ namespace Morfologik.Stemming
                     var twoStrings = stringPair.Trim().Split(' ');
                     if (twoStrings.Length == 2)
                     {
-                        if (!replacementPairs.ContainsKey(twoStrings[0]))
+                        if (!replacementPairs.TryGetValue(twoStrings[0], out IList<string>? currentReplacements))
                             replacementPairs[twoStrings[0]] = new List<string> { twoStrings[1] };
                         else
-                            replacementPairs[twoStrings[0]].Add(twoStrings[1]);
+                            currentReplacements.Add(twoStrings[1]);
                     }
                     else
                     {
@@ -466,12 +466,13 @@ namespace Morfologik.Stemming
                     {
                         char fromChar = twoChars[0][0];
                         char toChar = twoChars[1][0];
-                        if (!equivalentCharacters.ContainsKey(fromChar))
+                        if (!equivalentCharacters.TryGetValue(fromChar, out IList<char>? characters))
                         {
                             IList<char> chList = new List<char>();
                             equivalentCharacters[fromChar] = chList;
                         }
-                        equivalentCharacters[fromChar].Add(toChar);
+                        else
+                            characters!.Add(toChar);
                     }
                     else
                     {
@@ -501,15 +502,20 @@ namespace Morfologik.Stemming
 
         private static bool BooleanValue(string value)
         {
-            value = value.ToLowerInvariant();
-            if ("true".Equals(value) || "yes".Equals(value) || "on".Equals(value))
+            if (string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "on", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
-            if ("false".Equals(value) || "no".Equals(value) || "off".Equals(value))
+
+            if (string.Equals(value, "false", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "no", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "off", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
+
             throw new ArgumentException("Not a boolean value: " + value);
         }
 

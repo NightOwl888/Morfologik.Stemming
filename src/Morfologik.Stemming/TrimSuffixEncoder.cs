@@ -1,5 +1,4 @@
-﻿using J2N.IO;
-using System.Diagnostics;
+﻿using System;
 
 namespace Morfologik.Stemming
 {
@@ -29,80 +28,110 @@ namespace Morfologik.Stemming
     /// encoded: Dbar
     /// </code>
     /// </summary>
-    public class TrimSuffixEncoder : ISequenceEncoder
+    public sealed class TrimSuffixEncoder : ISequenceEncoder // Morfologik.Stemming specific - marked sealed to prevent inheritance and ensure singleton usage
     {
+        private TrimSuffixEncoder() { } // Singleton only
+
+        /// <summary>
+        /// Gets the singleton instance.
+        /// </summary>
+        public static TrimSuffixEncoder Instance { get; } = new TrimSuffixEncoder();
+
         /// <summary>
         /// Maximum encodable single-byte code.
         /// </summary>
         private const int RemoveEverything = 255;
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public virtual ByteBuffer Encode(ByteBuffer reuse, ByteBuffer source, ByteBuffer target)
+
+        /// <inheritdoc cref="ISequenceEncoder.PrefixBytes"/>
+        public int PrefixBytes => 1;
+
+        /// <inheritdoc/>
+        public int GetMaxEncodedByteCount(int sourceByteCount, int targetByteCount)
         {
-            int sharedPrefix = BufferUtils.SharedPrefixLength(source, target);
-            int truncateBytes = source.Remaining - sharedPrefix;
+            return checked(PrefixBytes + targetByteCount);
+        }
+
+        /// <inheritdoc/>
+        public int GetMaxDecodedByteCount(int sourceByteCount, int encodedByteCount)
+        {
+            return checked(sourceByteCount + encodedByteCount - PrefixBytes);
+        }
+
+        /// <inheritdoc/>
+        public bool TryEncode(ReadOnlySpan<byte> source, ReadOnlySpan<byte> target, Span<byte> destination, out int bytesWritten)
+        {
+            int sharedPrefixLength = BufferUtils.SharedPrefixLength(
+                source,
+                target);
+
+            int truncateBytes = source.Length - sharedPrefixLength;
+
             if (truncateBytes >= RemoveEverything)
             {
                 truncateBytes = RemoveEverything;
-                sharedPrefix = 0;
+                sharedPrefixLength = 0;
             }
 
-            reuse = BufferUtils.ClearAndEnsureCapacity(reuse, 1 + target.Remaining - sharedPrefix);
+            int suffixLength = target.Length - sharedPrefixLength;
+            int requiredLength = checked(PrefixBytes + suffixLength);
 
-            Debug.Assert(target.HasArray &&
-                   target.Position == 0 &&
-                   target.ArrayOffset == 0);
+            if (destination.Length < requiredLength)
+            {
+                bytesWritten = 0;
+                return false;
+            }
 
-            byte suffixTrimCode = (byte)(truncateBytes + 'A');
-            reuse.Put(suffixTrimCode)
-                 .Put(target.Array, sharedPrefix, target.Remaining - sharedPrefix)
-                 .Flip();
+            destination[0] = (byte)((truncateBytes + 'A') & 0xFF);
 
-            return reuse;
+            target.Slice(sharedPrefixLength).CopyTo(destination.Slice(PrefixBytes));
+
+            bytesWritten = requiredLength;
+            return true;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public virtual int PrefixBytes => 1;
-
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public virtual ByteBuffer Decode(ByteBuffer reuse, ByteBuffer source, ByteBuffer encoded)
+        /// <inheritdoc/>
+        public bool TryDecode(ReadOnlySpan<byte> source, ReadOnlySpan<byte> encoded, Span<byte> destination, out int bytesWritten)
         {
-            Debug.Assert(encoded.Remaining >= 1);
+            if (encoded.Length < PrefixBytes)
+            {
+                throw new ArgumentException("Encoded sequence must be at least 1 byte long.", nameof(encoded));
+            }
 
-            int suffixTrimCode = encoded.Get(encoded.Position);
-            int truncateBytes = (suffixTrimCode - 'A') & 0xFF;
+            int truncateBytes = (encoded[0] - 'A') & 0xFF;
+
             if (truncateBytes == RemoveEverything)
             {
-                truncateBytes = source.Remaining;
+                truncateBytes = source.Length;
             }
 
-            int len1 = source.Remaining - truncateBytes;
-            int len2 = encoded.Remaining - 1;
+            if (truncateBytes > source.Length)
+            {
+                throw new ArgumentException("Encoded sequence requests removal of more bytes than the source contains.", nameof(encoded));
+            }
 
-            reuse = BufferUtils.ClearAndEnsureCapacity(reuse, len1 + len2);
+            int sourceLength = source.Length - truncateBytes;
+            int suffixLength = encoded.Length - PrefixBytes;
+            int requiredLength = checked(sourceLength + suffixLength);
 
-            Debug.Assert(source.HasArray &&
-                   source.Position == 0 &&
-                   source.ArrayOffset == 0);
+            if (destination.Length < requiredLength)
+            {
+                bytesWritten = 0;
+                return false;
+            }
 
-            Debug.Assert(encoded.HasArray &&
-                   encoded.Position == 0 &&
-                   encoded.ArrayOffset == 0);
+            source.Slice(0, sourceLength).CopyTo(destination);
+            encoded.Slice(PrefixBytes).CopyTo(destination.Slice(sourceLength));
 
-            reuse.Put(source.Array, 0, len1)
-                 .Put(encoded.Array, 1, len2)
-                 .Flip();
-
-            return reuse;
+            bytesWritten = requiredLength;
+            return true;
         }
 
-        // No need to override ToString() as it was only returning the type name, anyway
+
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return nameof(TrimSuffixEncoder);
+        }
     }
 }
