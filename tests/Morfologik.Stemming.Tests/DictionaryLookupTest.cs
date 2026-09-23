@@ -9,6 +9,14 @@ namespace Morfologik.Stemming
 {
     public class DictionaryLookupTest : TestCase
     {
+        private DictionaryLookupResult reuse;
+
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            reuse = new DictionaryLookupResult();
+        }
+
         [Test]
         public void TestApplyReplacements()
         {
@@ -64,12 +72,12 @@ namespace Morfologik.Stemming
             IStemmer s = new DictionaryLookup(ReadDictionary(dict));
 
             assertArrayEquals(new String[] { "Rzeczpospolita", "subst:irreg" },
-                    stem(s, "Rzeczypospolitej"));
+                    stem(s, "Rzeczypospolitej", reuse));
             assertArrayEquals(new String[] { "Rzeczpospolita", "subst:irreg" },
-                stem(s, "Rzecząpospolitą"));
+                stem(s, "Rzecząpospolitą", reuse));
 
             // This word is not in the dictionary.
-            assertNoStemFor(s, "martygalski");
+            assertNoStemFor(s, "martygalski", reuse);
         }
 
         [Test]
@@ -81,10 +89,10 @@ namespace Morfologik.Stemming
             IStemmer s = new DictionaryLookup(ReadDictionary(dict));
 
             assertArrayEquals(new String[] { "Rzeczpospolita", "subst:irreg" },
-                    stem(s, "Rzecz\\apospolit\\a"));
+                stem(s, "Rzecz\\apospolit\\a", reuse));
 
             assertArrayEquals(new String[] { "Rzeczpospolita", "subst:irreg" },
-                stem(s, "krowa\\apospolit\\a"));
+                stem(s, "krowa\\apospolit\\a", reuse));
         }
 
         /* */
@@ -105,15 +113,15 @@ namespace Morfologik.Stemming
             //Assertions.assertThat(stem(s, "Rzecząpospolitą"))
             //      .containsExactly("Rzeczpospolita", "subst:irreg");
 
-            assertEquals(new string[] { "Rzeczpospolita", "subst:irreg" }, stem(s, "Rzeczypospolitej"));
-            assertEquals(new string[] { "Rzeczycki", "adj:pl:nom:m" }, stem(s, "Rzeczyccy"));
-            assertEquals(new string[] { "Rzeczpospolita", "subst:irreg" }, stem(s, "Rzecząpospolitą"));
+            assertEquals(new string[] { "Rzeczpospolita", "subst:irreg" }, stem(s, "Rzeczypospolitej", reuse));
+            assertEquals(new string[] { "Rzeczycki", "adj:pl:nom:m" }, stem(s, "Rzeczyccy", reuse));
+            assertEquals(new string[] { "Rzeczpospolita", "subst:irreg" }, stem(s, "Rzecząpospolitą", reuse));
 
             // This word is not in the dictionary.
-            assertNoStemFor(s, "martygalski");
+            assertNoStemFor(s, "martygalski", reuse);
 
             // This word uses characters that are outside of the encoding range of the dictionary. 
-            assertNoStemFor(s, "Rzeczyckiõh");
+            assertNoStemFor(s, "Rzeczyckiõh", reuse);
         }
 
         /* */
@@ -166,8 +174,7 @@ namespace Morfologik.Stemming
             List<WordData> words = new List<WordData>();
             foreach (WordData wd in s)
             {
-                //WordData clone = (WordData)wd.Clone();
-                WordData clone = new WordData(wd);
+                WordData clone = new(wd);
                 words.Add(clone);
             }
 
@@ -209,8 +216,8 @@ namespace Morfologik.Stemming
             Dictionary read = ReadDictionary(dict);
             IStemmer s = new DictionaryLookup(read);
 
-            assertArrayEquals(new String[] { "merge", "001" }, stem(s, "mergeam"));
-            assertArrayEquals(new String[] { "merge", "002" }, stem(s, "merseserăm"));
+            assertArrayEquals(new String[] { "merge", "001" }, stem(s, "mergeam", reuse));
+            assertArrayEquals(new String[] { "merge", "002" }, stem(s, "merseserăm", reuse));
         }
 
         /* */
@@ -225,12 +232,12 @@ namespace Morfologik.Stemming
             // empty sequences instead of null for empty stems and tags.
 
             assertArrayEquals(new String[] { "miała", string.Empty }, stem(s,
-                    "mieć|verb:praet:sg:ter:f:?perf"));
-            assertArrayEquals(new String[] { "a", string.Empty }, stem(s, "a|conj"));
-            assertArrayEquals(new String[] { }, stem(s, "dziecko|subst:sg:dat:n"));
+                    "mieć|verb:praet:sg:ter:f:?perf", reuse));
+            assertArrayEquals(new String[] { "a", string.Empty }, stem(s, "a|conj", reuse));
+            assertArrayEquals(new String[] { }, stem(s, "dziecko|subst:sg:dat:n", reuse));
 
             // This word is not in the dictionary.
-            assertNoStemFor(s, "martygalski");
+            assertNoStemFor(s, "martygalski", reuse);
         }
 
         /* */
@@ -302,10 +309,10 @@ namespace Morfologik.Stemming
         }
 
         /* */
-        public static String[] stem(IStemmer s, String word)
+        public static String[] stem(IStemmer s, String word, DictionaryLookupResult reuse)
         {
             List<String> result = new List<String>();
-            foreach (WordData wd in s.Lookup(word.AsSpan()))
+            foreach (WordData wd in s.Lookup(word.AsSpan(), reuse))
             {
                 result.Add(asString(wd.Stem));
                 result.Add(asString(wd.Tag));
@@ -314,9 +321,9 @@ namespace Morfologik.Stemming
         }
 
         /* */
-        public static void assertNoStemFor(IStemmer s, String word)
+        public static void assertNoStemFor(IStemmer s, String word, DictionaryLookupResult reuse)
         {
-            assertArrayEquals(new String[] { }, stem(s, word));
+            assertArrayEquals(new String[] { }, stem(s, word, reuse));
         }
     }
 }
