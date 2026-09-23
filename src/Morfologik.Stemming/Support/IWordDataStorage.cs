@@ -3,6 +3,15 @@ using System.Text;
 
 namespace Morfologik.Stemming
 {
+    /// <summary>
+    /// Contract for the data storage of a <see cref="WordData"/> instance.
+    /// <para/>
+    /// This contract allows for either single-element or multiple-element
+    /// backing stores that are indexed. It also provides direct access
+    /// to the <see cref="StemCharBuffer"/> and <see cref="TagCharBuffer"/>
+    /// along with the other members required to lazily load <see cref="WordData.Stem"/>
+    /// and <see cref="WordData.Tag"/>.
+    /// </summary>
     internal interface IWordDataStorage
     {
         Encoding Decoder { get; }
@@ -33,12 +42,5 @@ namespace Morfologik.Stemming
         void SetTagOffsets(int index, int offset, int length);
 
         bool IsTagLoaded(int index);
-
-
-        //void SetDecoder(Encoding decoder);
-
-        //void SetWord(ReadOnlySpan<char> word);
-
-        //void Clear();
     }
 }
