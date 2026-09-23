@@ -69,35 +69,6 @@ namespace Morfologik.Stemming.Polish
         /// <returns>The lookup result.</returns>
         public DictionaryLookupResult Lookup(ReadOnlySpan<char> word, DictionaryLookupResult? reuse = default) => lookup.Lookup(word, reuse);
 
-        ///// <summary>
-        ///// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
-        ///// followed by a separator. The result is a stem (decompressed accordingly
-        ///// to the dictionary's specification) and an optional tag data.
-        ///// </summary>
-        //public IList<WordData> Lookup(ICharSequence word) => lookup.Lookup(word);
-
-        ///// <summary>
-        ///// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
-        ///// followed by a separator. The result is a stem (decompressed accordingly
-        ///// to the dictionary's specification) and an optional tag data.
-        ///// </summary>
-        //public IList<WordData> Lookup(char[] word) => lookup.Lookup(word);
-
-        ///// <summary>
-        ///// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
-        ///// followed by a separator. The result is a stem (decompressed accordingly
-        ///// to the dictionary's specification) and an optional tag data.
-        ///// </summary>
-        //public IList<WordData> Lookup(StringBuilder word) => lookup.Lookup(word);
-
-        ///// <summary>
-        ///// Searches the automaton for a symbol sequence equal to <paramref name="word"/>,
-        ///// followed by a separator. The result is a stem (decompressed accordingly
-        ///// to the dictionary's specification) and an optional tag data.
-        ///// </summary>
-        //public IList<WordData> Lookup(string word) => lookup.Lookup(word);
-
-
         /// <summary>
         /// Iterates over all dictionary forms stored in this stemmer.
         /// </summary>
