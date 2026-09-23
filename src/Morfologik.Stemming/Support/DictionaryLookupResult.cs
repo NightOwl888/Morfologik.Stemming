@@ -74,11 +74,6 @@ namespace Morfologik.Stemming
         public int Count => entries.WrittenCount;
 
         /// <summary>
-        /// Gets the word associated with this lookup.
-        /// </summary>
-        public ReadOnlyMemory<char> Word => wordCharsBuffer.WrittenMemory;
-
-        /// <summary>
         /// Gets the underlying <see cref="WordData"/> at the specified <paramref name="index"/>.
         /// </summary>
         /// <param name="index">The zero-based index of the element to get.</param>
@@ -96,7 +91,7 @@ namespace Morfologik.Stemming
 
         /// <summary>
         /// Returns an enumerator over the <see cref="WordData"/> elemements associated
-        /// with the <see cref="Word"/>.
+        /// with the word.
         /// </summary>
         /// <returns></returns>
         public Enumerator GetEnumerator()
@@ -116,7 +111,7 @@ namespace Morfologik.Stemming
 
         /// <summary>
         /// An enumerator over the <see cref="WordData"/> elements associated with
-        /// the <see cref="Word"/>.
+        /// the word.
         /// </summary>
         public struct Enumerator : IEnumerator<WordData>
         {
