@@ -6,7 +6,7 @@ namespace Morfologik.Stemming
     /// <summary>
     /// Utilities to setup buffers.
     /// </summary>
-    public static class BufferUtils
+    internal static class BufferUtils
     {
         // Morfologik.Stemming: Removed ClearAndEnsureCapacity() helper because we are using ArrayBufferWriter to manage buffer growth and reuse.
 
