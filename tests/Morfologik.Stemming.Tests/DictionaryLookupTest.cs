@@ -302,8 +302,7 @@ namespace Morfologik.Stemming
         /* */
         public static String asString(ReadOnlyMemory<char> value)
         {
-            // Morfologik.Stemming TODO: We need to check whether we need to make our public API nullable.
-            // But, the old API converted empty sequences to null, so we will do the same for now. 
+            // Morfologik.Stemming: Redefined the API so that Empty is the same meaning as null in .NET
             //return value.Length == 0 ? null : value.ToString();
             return value.ToString();
         }
