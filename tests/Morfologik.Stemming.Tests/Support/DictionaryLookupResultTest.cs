@@ -148,7 +148,15 @@ namespace Morfologik.Stemming
             for (int i = 0; i < result.Count; i++)
             {
                 assertNotNull(destination[i]);
+
                 assertEquals(result[i].Word.ToString(), destination[i].Word.ToString());
+                assertFalse(result[i].Word.Span.Overlaps(destination[i].Word.Span));
+
+                assertEquals(result[i].Stem.ToString(), destination[i].Stem.ToString());
+                assertFalse(result[i].Stem.Span.Overlaps(destination[i].Stem.Span));
+
+                assertEquals(result[i].Tag.ToString(), destination[i].Tag.ToString());
+                assertFalse(result[i].Tag.Span.Overlaps(destination[i].Tag.Span));
             }
         }
     }
