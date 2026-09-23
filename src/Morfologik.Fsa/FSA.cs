@@ -20,7 +20,7 @@ namespace Morfologik.Fsa
         /// </summary>
         /// <returns>The identifier of the root node of this atomation. Returns
         /// 0 if the start node is also the end node (the automaton is empty).</returns>
-        public abstract int GetRootNode();
+        public abstract int RootNode { get; }
 
         /// <summary>
         /// Returns the identifier of the first arc leaving <paramref name="node"/>
@@ -191,7 +191,7 @@ namespace Morfologik.Fsa
         /// <returns>Returns all sequences encoded in the automaton.</returns>
         public IEnumerable<ReadOnlyMemory<byte>> GetSequences()
         {
-            return GetSequences(GetRootNode());
+            return GetSequences(RootNode);
         }
 
         /// <summary>
@@ -235,7 +235,7 @@ namespace Morfologik.Fsa
         /// <returns>Returns the argument (for access to anonymous class fields).</returns>
         public virtual T VisitInPostOrder<T>(T v) where T : IStateVisitor
         {
-            return VisitInPostOrder(v, GetRootNode());
+            return VisitInPostOrder(v, RootNode);
         }
 
         /// <summary>
@@ -281,7 +281,7 @@ namespace Morfologik.Fsa
         /// <returns>Returns the argument (for access to anonymous class fields).</returns>
         public virtual T VisitInPreOrder<T>(T v) where T : IStateVisitor
         {
-            return VisitInPreOrder(v, GetRootNode());
+            return VisitInPreOrder(v, RootNode);
         }
 
         /// <summary>

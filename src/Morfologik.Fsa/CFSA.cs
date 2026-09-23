@@ -160,6 +160,7 @@ namespace Morfologik.Fsa
         [SuppressMessage("Microsoft.Performance", "CA1819", Justification = "design requires some writable array properties")]
         public byte[] LabelMapping { get; private set; }
 
+
         /// <summary>
         /// Creates a new automaton, reading it from a file in FSA format, version 5.
         /// </summary>
@@ -197,13 +198,12 @@ namespace Morfologik.Fsa
              * Read arcs' data.
              */
             Arcs = ReadRemaining(stream);
+
+            // Load the root node
+            RootNode = GetRootNode();
         }
 
-        /// <summary>
-        /// Returns the start node of this automaton. May return <c>0</c> if
-        /// the start node is also an end node.
-        /// </summary>
-        public override int GetRootNode()
+        private int GetRootNode()
         {
             // Skip dummy node marking terminating state.
             int epsilonNode = SkipArc(GetFirstArc(0));
@@ -211,6 +211,12 @@ namespace Morfologik.Fsa
             // And follow the epsilon node's first (and only) arc.
             return GetDestinationNodeOffset(GetFirstArc(epsilonNode));
         }
+
+        /// <summary>
+        /// Returns the start node of this automaton. May return <c>0</c> if
+        /// the start node is also an end node.
+        /// </summary>
+        public override int RootNode { get; }
 
         /// <summary>
         /// Returns the identifier of the first arc leaving <paramref name="node"/>

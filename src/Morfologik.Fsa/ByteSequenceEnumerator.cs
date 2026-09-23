@@ -55,14 +55,14 @@ namespace Morfologik.Fsa
         /// </summary>
         /// <param name="fsa">The automaton to iterate over.</param>
         public ByteSequenceEnumerator(FSA fsa)
-            : this(fsa, fsa.GetRootNode())
+            : this(fsa, fsa.RootNode)
         { }
 
         /// <summary>
         /// Create an instance of the enumerator for a given node.
         /// </summary>
         /// <param name="fsa">The automaton to iterate over.</param>
-        /// <param name="node">The starting node's identifier (can be the <see cref="FSA.GetRootNode()"/>.</param>
+        /// <param name="node">The starting node's identifier (can be the <see cref="FSA.RootNode"/>.</param>
         public ByteSequenceEnumerator(FSA fsa, int node)
         {
             this.fsa = fsa;

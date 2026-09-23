@@ -182,6 +182,15 @@ namespace Morfologik.Fsa
              * Read arcs' data.
              */
             Arcs = ReadRemaining(stream);
+
+            // Load the root node
+            RootNode = GetRootNode();
+        }
+
+        private int GetRootNode()
+        {
+            // Skip dummy node marking terminating state.
+            return GetDestinationNodeOffset(GetFirstArc(epsilon));
         }
 
         /// <summary>
@@ -190,11 +199,7 @@ namespace Morfologik.Fsa
         /// </summary>
         /// <returns>The identifier of the root node of this atomation. Returns
         /// 0 if the start node is also the end node (the automaton is empty).</returns>
-        public override int GetRootNode()
-        {
-            // Skip dummy node marking terminating state.
-            return GetDestinationNodeOffset(GetFirstArc(epsilon));
-        }
+        public override int RootNode { get; }
 
         /// <summary>
         /// Returns the identifier of the first arc leaving <paramref name="node"/>

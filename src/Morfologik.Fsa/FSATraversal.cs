@@ -29,7 +29,7 @@ namespace Morfologik.Fsa
         /// order of input sequences used at automaton construction time.
         /// </summary>
         /// <param name="sequence">The byte sequence to calculate perfect hash for.</param>
-        /// <param name="node">The node to start traversal from, typically the root node (<see cref="FSA.GetRootNode()"/>).</param>
+        /// <param name="node">The node to start traversal from, typically the root node (<see cref="FSA.RootNode"/>).</param>
         /// <returns>
         /// Returns a unique integer assigned to the input sequence in the automaton (reflecting
         /// the number of that sequence in the input used to build the automaton). Returns a negative
@@ -127,7 +127,7 @@ namespace Morfologik.Fsa
         /// <seealso cref="PerfectHash(ReadOnlySpan{byte}, int)"/>
         public int PerfectHash(ReadOnlySpan<byte> sequence)
         {
-            return PerfectHash(sequence, fsa.GetRootNode());
+            return PerfectHash(sequence, fsa.RootNode);
         }
 
         /// <summary>
@@ -135,7 +135,7 @@ namespace Morfologik.Fsa
         /// <paramref name="sequence"/> and starting at node <paramref name="node"/>.
         /// </summary>
         /// <param name="sequence">Input sequence to look for in the automaton.</param>
-        /// <param name="node">The node to start traversal from, typically the root node (<see cref="FSA.GetRootNode()"/>).</param>
+        /// <param name="node">The node to start traversal from, typically the root node (<see cref="FSA.RootNode"/>).</param>
         /// <returns>A <see cref="MatchResult"/> with match <see cref="MatchResult.Kind"/>
         /// and other relevant fields.</returns>
         /// <seealso cref="Match(ReadOnlySpan{byte})"/>
@@ -197,7 +197,7 @@ namespace Morfologik.Fsa
         /// <seealso cref="Match(ReadOnlySpan{byte}, int)"/>
         public MatchResult Match(ReadOnlySpan<byte> sequence)
         {
-            return Match(sequence, fsa.GetRootNode());
+            return Match(sequence, fsa.RootNode);
         }
     }
 }

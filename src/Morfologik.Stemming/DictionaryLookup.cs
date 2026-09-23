@@ -67,10 +67,10 @@ namespace Morfologik.Stemming
             this.dictionary = dictionary;
             this.dictionaryMetadata = dictionary.Metadata;
             this.sequenceEncoder = dictionary.Metadata.SequenceEncoderType.Get();
-            this.rootNode = dictionary.FSA.GetRootNode();
+            this.rootNode = dictionary.FSA.RootNode;
             this.fsa = dictionary.FSA;
             this.matcher = new FSATraversal(fsa);
-            this.finalStatesIterator = new ByteSequenceEnumerator(fsa, fsa.GetRootNode());
+            this.finalStatesIterator = new ByteSequenceEnumerator(fsa, fsa.RootNode);
 
             if (dictionaryMetadata == null)
             {
