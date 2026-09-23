@@ -102,7 +102,10 @@ namespace Morfologik.Stemming
         /// <param name="reuse">A <see cref="DictionaryLookupResult"/> instance to reuse
         /// or <c>null</c> to create a new instance. If not <c>null</c>, this same instance
         /// will be returned.</param>
-        /// <returns></returns>
+        /// <returns>A list of <see cref="WordData"/> entries (possibly empty).</returns>
+        /// <remarks>
+        /// This method is immutable and threadsafe.
+        /// </remarks>
         public DictionaryLookupResult Lookup(ReadOnlySpan<char> word, DictionaryLookupResult? reuse = default)
         {
             if (reuse is null)
