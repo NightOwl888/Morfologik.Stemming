@@ -15,24 +15,6 @@ namespace Morfologik.Stemming
                 return Dictionary.Read(fsaStream, metadataStream);
         }
 
-        //[Test]
-        //public void TestLookupResultReuseAndCount()
-        //{
-        //    string dict = "test-prefix.dict";
-        //    var lookup = new DictionaryLookup(ReadDictionary(dict));
-
-        //    // Initial lookup creates a new result or populates a reused one
-        //    DictionaryLookupResult result = lookup.Lookup("Rzeczypospolitej".AsSpan());
-        //    int initialCount = result.Count;
-        //    assertTrue(initialCount > 0);
-        //    assertEquals("Rzeczypospolitej", result.Word.ToString());
-
-        //    // Reuse the result object for a different lookup
-        //    lookup.Lookup("martygalski".AsSpan(), reuse: result);
-        //    assertEquals(0, result.Count);
-        //    assertEquals("martygalski", result.Word.ToString());
-        //}
-
         [Test]
         public void TestLookupResultReuseAndLazyLoading()
         {
