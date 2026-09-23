@@ -223,7 +223,7 @@ namespace Morfologik.Stemming
             return tagBytesBuffer.WrittenMemory.Slice(entry.TagBytesOffset, entry.TagBytesLength);
         }
 
-        internal void SetWord(ReadOnlySpan<char> word)
+        internal void SetWord(scoped ReadOnlySpan<char> word)
         {
             Span<char> temp = wordCharsBuffer.GetSpan(word.Length);
             word.CopyTo(temp);
