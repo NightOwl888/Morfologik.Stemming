@@ -50,11 +50,6 @@ namespace Morfologik.Stemming
         private readonly char separatorChar;
 
         /// <summary>
-        /// Reusable match result.
-        /// </summary>
-        private readonly MatchResult matchResult = new MatchResult();
-
-        /// <summary>
         /// The <see cref="Stemming.Dictionary"/> this lookup is using.
         /// </summary>
         private readonly Dictionary dictionary;
@@ -152,9 +147,9 @@ namespace Morfologik.Stemming
                 int wordByteLength = encoder.GetBytes(word, wordByteBuffer);
 
                 // Try to find a partial match in the dictionary.
-                MatchResult match = matcher.Match(matchResult, wordByteBuffer.Slice(0, wordByteLength), rootNode);
+                MatchResult match = matcher.Match(wordByteBuffer.Slice(0, wordByteLength), rootNode);
 
-                if (match.Kind == MatchResult.SequenceIsAPrefix)
+                if (match.Kind == MatchResultKind.SequenceIsAPrefix)
                 {
                     /*
                      * The entire sequence exists in the dictionary. A separator should
