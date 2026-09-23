@@ -167,7 +167,7 @@ namespace Morfologik.Stemming
         /// Not supported.
         /// </summary>
         /// <exception cref="NotSupportedException">Always.</exception>
-        public void Reset()
+        void IEnumerator.Reset()
         {
             throw new NotSupportedException();
         }

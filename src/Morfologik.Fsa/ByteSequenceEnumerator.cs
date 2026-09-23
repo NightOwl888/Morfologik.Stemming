@@ -148,7 +148,7 @@ namespace Morfologik.Fsa
         /// <summary>
         /// Use <see cref="RestartFrom(int)"/> instead.
         /// </summary>
-        public void Reset()
+        void IEnumerator.Reset()
         {
             throw new NotSupportedException();
         }
