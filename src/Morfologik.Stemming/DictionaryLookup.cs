@@ -189,13 +189,15 @@ namespace Morfologik.Stemming
                             * from the tag.
                             */
                             Debug.Assert(prefixBytes <= bbSize, sequenceEncoder.GetType() + " >? " + bbSize);
-                            int sepPos;
-                            for (sepPos = prefixBytes; sepPos < bbSize; sepPos++)
+                            // Morfologik.Stemming: Use IndexOf() for the vectorized search in .NET.
+                            int sepPos = ba.Slice(prefixBytes).IndexOf(separator);
+                            if (sepPos >= 0)
                             {
-                                if (ba[sepPos] == separator)
-                                {
-                                    break;
-                                }
+                                sepPos += prefixBytes;
+                            }
+                            else
+                            {
+                                sepPos = bbSize;
                             }
 
                             /*

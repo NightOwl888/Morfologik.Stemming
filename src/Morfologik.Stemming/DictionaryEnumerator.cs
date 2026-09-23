@@ -60,14 +60,9 @@ namespace Morfologik.Stemming
             ReadOnlySpan<byte> ba = entryBuffer.Span;
             int bbSize = entryBuffer.Length;
 
-            int sepPos;
-            for (sepPos = 0; sepPos < bbSize; sepPos++)
-            {
-                if (ba[sepPos] == separator)
-                    break;
-            }
-
-            if (sepPos == bbSize)
+            // Morfologik.Stemming: Use IndexOf() for the vectorized search in .NET.
+            int sepPos = ba.IndexOf(separator);
+            if (sepPos < 0)
             {
                 throw new Exception("Invalid dictionary entry format (missing separator).");
             }
@@ -101,10 +96,15 @@ namespace Morfologik.Stemming
             int stemEnd = encodedStart + sequenceEncoder.PrefixBytes;
 #pragma warning restore 612, 618
 
-            for (; stemEnd < bbSize; stemEnd++)
+            // Morfologik.Stemming: Use IndexOf() for the vectorized search in .NET.
+            int separatorOffset = ba.Slice(stemEnd).IndexOf(separator);
+            if (separatorOffset >= 0)
             {
-                if (ba[stemEnd] == separator)
-                    break;
+                stemEnd += separatorOffset;
+            }
+            else
+            {
+                stemEnd = bbSize;
             }
 
             int encodedStemLength = stemEnd - encodedStart;
