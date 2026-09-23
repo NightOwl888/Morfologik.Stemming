@@ -123,13 +123,13 @@ namespace Morfologik.Stemming
             {
                 if (!storage.IsTagLoaded(index))
                 {
-                    ReadOnlySpan<byte> TagBytes = storage.GetTagBytes(index).Span;
+                    ReadOnlySpan<byte> tagBytes = storage.GetTagBytes(index).Span;
                     Encoding decoder = storage.Decoder;
                     ArrayBufferWriter<char> tagCharBuffer = storage.TagCharBuffer;
-                    int max = decoder.GetMaxCharCount(TagBytes.Length);
+                    int max = decoder.GetMaxCharCount(tagBytes.Length);
                     int offset = tagCharBuffer.WrittenCount;
                     Span<char> destination = tagCharBuffer.GetSpan(max);
-                    int length = decoder.GetChars(TagBytes, destination);
+                    int length = decoder.GetChars(tagBytes, destination);
                     tagCharBuffer.Advance(length);
                     storage.SetTagOffsets(index, offset, length);
                 }
