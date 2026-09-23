@@ -34,7 +34,7 @@ namespace Morfologik.Stemming
         }
 
         [Test]
-        public void TestEncodeSuffixOnRandomSequences([ValueSource(typeof(TestFactory), "Values")]ISequenceEncoder coder)
+        public void TestEncodeSuffixOnRandomSequences([ValueSource(typeof(TestFactory), nameof(TestFactory.Values))]ISequenceEncoder coder)
         {
             for (int i = 0; i < 10000; i++)
             {
@@ -46,7 +46,7 @@ namespace Morfologik.Stemming
         }
 
         [Test]
-        public void TestEncodeSamples([ValueSource(typeof(TestFactory), "Values")]ISequenceEncoder coder)
+        public void TestEncodeSamples([ValueSource(typeof(TestFactory), nameof(TestFactory.Values))]ISequenceEncoder coder)
         {
             assertRoundtripEncode(coder, "", "");
             assertRoundtripEncode(coder, "abc", "ab");
