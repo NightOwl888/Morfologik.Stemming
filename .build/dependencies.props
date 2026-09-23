@@ -10,7 +10,6 @@
     <NUnitPackageReferenceVersion>3.14.0</NUnitPackageReferenceVersion>
     <NUnit3TestAdapterPackageReferenceVersion>4.6.0</NUnit3TestAdapterPackageReferenceVersion>
     <RandomizedTestingGeneratorsPackageReferenceVersion>2.7.8</RandomizedTestingGeneratorsPackageReferenceVersion>
-    <SpanToolsValueStringBuilderGeneratorPackageReferenceVersion>1.0.0-alpha.113</SpanToolsValueStringBuilderGeneratorPackageReferenceVersion>
     <SystemTextEncodingCodePagesPackageReferenceVersion>9.0.0</SystemTextEncodingCodePagesPackageReferenceVersion>
   </PropertyGroup>
 </Project>
