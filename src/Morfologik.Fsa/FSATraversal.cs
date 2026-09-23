@@ -29,8 +29,6 @@ namespace Morfologik.Fsa
         /// order of input sequences used at automaton construction time.
         /// </summary>
         /// <param name="sequence">The byte sequence to calculate perfect hash for.</param>
-        /// <param name="start">Start index in the sequence array.</param>
-        /// <param name="length">Length of the byte sequence, must be at least 1.</param>
         /// <param name="node">The node to start traversal from, typically the root node (<see cref="FSA.GetRootNode()"/>).</param>
         /// <returns>
         /// Returns a unique integer assigned to the input sequence in the automaton (reflecting
@@ -38,11 +36,16 @@ namespace Morfologik.Fsa
         /// integer if the input sequence was not part of the input from which the automaton was created.
         /// The type of mismatch is a constant defined in <see cref="MatchResult"/>.
         /// </returns>
-        /// <seealso cref="PerfectHash(byte[])"/>
-        public int PerfectHash(byte[] sequence, int start, int length, int node)
+        /// <seealso cref="PerfectHash(ReadOnlySpan{byte})"/>
+        public int PerfectHash(ReadOnlySpan<byte> sequence, int node)
         {
+            int start = 0;
+            int length = sequence.Length;
+
             Debug.Assert((fsa.Flags & FSAFlags.Numbers) != 0, $"FSA not built with {FSAFlags.Numbers} option.");
-            Debug.Assert(length > 0, "Must be a non-empty sequence.");
+
+            if (sequence.IsEmpty)
+                throw new ArgumentException("Must be a non-empty sequence.", nameof(sequence));
 
             int hash = 0;
             int end = start + length - 1;
@@ -121,10 +124,10 @@ namespace Morfologik.Fsa
         /// integer if the input sequence was not part of the input from which the automaton was created.
         /// The type of mismatch is a constant defined in <see cref="MatchResult"/>.
         /// </returns>
-        /// <seealso cref="PerfectHash(byte[], int, int, int)"/>
-        public int PerfectHash(byte[] sequence)
+        /// <seealso cref="PerfectHash(ReadOnlySpan{byte}, int)"/>
+        public int PerfectHash(ReadOnlySpan<byte> sequence)
         {
-            return PerfectHash(sequence, 0, sequence.Length, fsa.GetRootNode());
+            return PerfectHash(sequence, fsa.GetRootNode());
         }
 
         /// <summary>
