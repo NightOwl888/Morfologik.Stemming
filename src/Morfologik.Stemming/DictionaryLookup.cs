@@ -227,13 +227,14 @@ namespace Morfologik.Stemming
                             */
                             int tagSize = bbSize - sepPos;
                             int tagByteOffset = result.TagBytesBuffer.WrittenCount;
-                            int tagByteCount = tagSize;
+                            int tagByteCount = 0;
 
                             if (tagSize > 0)
                             {
                                 Span<byte> tagByteDestination = result.TagBytesBuffer.GetSpan(tagSize);
                                 ba.Slice(sepPos, tagSize).CopyTo(tagByteDestination);
                                 result.TagBytesBuffer.Advance(tagSize);
+                                tagByteCount = tagSize;
                             }
 
                             result.AddEntry(
