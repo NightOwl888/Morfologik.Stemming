@@ -146,6 +146,10 @@ namespace Morfologik.Stemming
                 // change the lookup to something else.
                 int wordByteLength = encoder.GetBytes(word, wordByteBuffer);
 
+                // Advance the buffer to the actual length of the encoded word.
+                // This is what the byteBuffer parameter of WordData.Update() did in the original Java code.
+                result.WordBytesBuffer.Advance(wordByteLength);
+
                 // Try to find a partial match in the dictionary.
                 MatchResult match = matcher.Match(wordByteBuffer.Slice(0, wordByteLength), rootNode);
 
