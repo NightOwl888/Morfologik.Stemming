@@ -16,7 +16,7 @@ namespace Morfologik.Fsa
             if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
 
-                        byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+            byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
             try
             {
                 while (buffer.Length > 0)
