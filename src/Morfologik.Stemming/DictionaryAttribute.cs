@@ -1,4 +1,5 @@
-﻿using System;
+﻿using J2N.Runtime.InteropServices;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -372,9 +373,7 @@ namespace Morfologik.Stemming
                     var twoStrings = stringPair.Trim().Split(' ');
                     if (twoStrings.Length == 2)
                     {
-                        if (!conversionPairs.ContainsKey(twoStrings[0]))
-                            conversionPairs[twoStrings[0]] = twoStrings[1];
-                        else
+                        if (!conversionPairs.TryAdd(twoStrings[0], twoStrings[1]))
                             throw new ArgumentException($"Input conversion cannot specify different values for the same input string: {twoStrings[0]}");
                     }
                     else
@@ -402,9 +401,7 @@ namespace Morfologik.Stemming
                     var twoStrings = stringPair.Trim().Split(' ');
                     if (twoStrings.Length == 2)
                     {
-                        if (!conversionPairs.ContainsKey(twoStrings[0]))
-                            conversionPairs[twoStrings[0]] = twoStrings[1];
-                        else
+                        if (!conversionPairs.TryAdd(twoStrings[0], twoStrings[1]))
                             throw new ArgumentException($"Output conversion cannot specify different values for the same input string: {twoStrings[0]}");
                     }
                     else
@@ -432,10 +429,13 @@ namespace Morfologik.Stemming
                     var twoStrings = stringPair.Trim().Split(' ');
                     if (twoStrings.Length == 2)
                     {
-                        if (!replacementPairs.TryGetValue(twoStrings[0], out IList<string>? currentReplacements))
-                            replacementPairs[twoStrings[0]] = new List<string> { twoStrings[1] };
-                        else
-                            currentReplacements.Add(twoStrings[1]);
+                        ref IList<string>? strList = ref CollectionMarshal.GetValueRefOrAddDefault(replacementPairs, twoStrings[0], out bool exists);
+
+                        // Set the value to a new list if it doesn't exist yet
+                        if (!exists)
+                            strList = new List<string>();
+
+                        strList!.Add(twoStrings[1]);
                     }
                     else
                     {
@@ -451,11 +451,11 @@ namespace Morfologik.Stemming
         /// <para/>
         /// This implements a feature similar to hunspell MAP in the affix file.
         /// </summary>
-        public static readonly DictionaryAttribute<Dictionary<char, IList<char>>> EquivalentChars =
-            new DictionaryAttribute<Dictionary<char, IList<char>>>("fsa.dict.speller.equivalent-chars", DictionaryAttribute.EquivalentChars,
+        public static readonly DictionaryAttribute<JCG.OrderedDictionary<char, IList<char>>> EquivalentChars =
+            new DictionaryAttribute<JCG.OrderedDictionary<char, IList<char>>>("fsa.dict.speller.equivalent-chars", DictionaryAttribute.EquivalentChars,
             fromString: (string propertyName, string value) =>
             {
-                var equivalentCharacters = new Dictionary<char, IList<char>>();
+                var equivalentCharacters = new JCG.OrderedDictionary<char, IList<char>>();
                 string[] eqChars = PairSplit!.Split(value);
                 foreach (var characterPair in eqChars)
                 {
@@ -466,13 +466,14 @@ namespace Morfologik.Stemming
                     {
                         char fromChar = twoChars[0][0];
                         char toChar = twoChars[1][0];
-                        if (!equivalentCharacters.TryGetValue(fromChar, out IList<char>? characters))
-                        {
-                            IList<char> chList = new List<char>();
-                            equivalentCharacters[fromChar] = chList;
-                        }
-                        else
-                            characters!.Add(toChar);
+
+                        ref IList<char>? chList = ref CollectionMarshal.GetValueRefOrAddDefault(equivalentCharacters, fromChar, out bool exists);
+
+                        // Set the value to a new list if it doesn't exist yet
+                        if (!exists)
+                            chList = new List<char>();
+
+                        chList!.Add(toChar);
                     }
                     else
                     {
