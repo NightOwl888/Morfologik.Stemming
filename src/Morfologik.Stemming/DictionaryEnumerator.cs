@@ -22,8 +22,6 @@ namespace Morfologik.Stemming
         private readonly WordDataStorage wordDataStorage;
         private readonly ISequenceEncoder sequenceEncoder;
 
-        private WordData? current = null;
-
         /// <summary>
         /// Initializes a new instance of <see cref="DictionaryEnumerator"/>.
         /// </summary>
