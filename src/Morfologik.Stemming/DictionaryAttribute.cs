@@ -1,6 +1,7 @@
 ﻿using J2N.Runtime.InteropServices;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -202,60 +203,71 @@ namespace Morfologik.Stemming
     /// <summary>
     /// Extensions to <see cref="DictionaryAttribute"/>.
     /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static class DictionaryAttributeExtensions
     {
         private static readonly DictionaryAttributeDescriptors attributeDescriptors = new();
 
-        /// <summary>
-        /// Converts a string to the given attribute's value.
-        /// </summary>
-        /// <param name="attribute">This attribute.</param>
-        /// <param name="value">The value to convert to an attribute value.</param>
-        /// <returns>Returns the attribute's value converted from a string.</returns>
-        /// <exception cref="ArgumentException">If the input string cannot be converted to the attribute's value.</exception>
-        public static object FromString(this DictionaryAttribute attribute, string value)
+        // C# 14 Extension Block for DictionaryAttribute
+        extension(DictionaryAttribute attribute)
         {
-            return attributeDescriptors[attribute].Parse(value);
+            /// <summary>
+            /// Gets the current <see cref="DictionaryAttribute"/>'s property name.
+            /// </summary>
+            /// <value>The property name string, i.e. <c>"fsa.dict.license"</c>.</value>
+            public string PropertyName => attributeDescriptors[attribute].PropertyName;
+
+            /// <summary>
+            /// Converts a string to the given attribute's value.
+            /// </summary>
+            /// <param name="value">The value to convert to an attribute value.</param>
+            /// <returns>Returns the attribute's value converted from a string.</returns>
+            /// <exception cref="ArgumentException">
+            /// The input string cannot be converted to the attribute's value.
+            /// <para/>
+            /// -or-
+            /// <para/>
+            /// The property name cannot be converted to a <see cref="DictionaryAttribute"/>.
+            /// </exception>
+            public object FromString(string value)
+                => attributeDescriptors[attribute].Parse(value);
+
+            /// <summary>
+            /// Converts a string to the given attribute's value without boxing.
+            /// </summary>
+            /// <param name="value">The value to convert to an attribute value.</param>
+            /// <param name="converted">Upon successful completion of the operation, outputs
+            /// the converted <typeparamref name="TValue"/> instance.</param>
+            /// <returns>Returns the attribute's value converted from a string.</returns>
+            /// <exception cref="ArgumentException">
+            /// The input string cannot be converted to the attribute's value.
+            /// <para/>
+            /// -or-
+            /// <para/>
+            /// The property name cannot be converted to a <see cref="DictionaryAttribute"/>.
+            /// </exception>
+            public void ConvertValueFromString<TValue>(string value, out TValue converted)
+                => attributeDescriptors[attribute].ConvertValueFromString(value, out converted);
         }
 
-        /// <summary>
-        /// Converts a string to the given attribute's value without boxing.
-        /// </summary>
-        /// <param name="attribute">This attribute.</param>
-        /// <param name="value">The value to convert to an attribute value.</param>
-        /// <param name="converted">Upon successful completion of the operation, outputs
-        /// the converted <typeparamref name="TValue"/> instance.</param>
-        /// <returns>Returns the attribute's value converted from a string.</returns>
-        /// <exception cref="ArgumentException">If the input string cannot be converted to the attribute's value.</exception>
-        public static void ConvertValueFromString<TValue>(this DictionaryAttribute attribute, string value, out TValue converted)
+        extension(DictionaryAttribute)
         {
-            attributeDescriptors[attribute].ConvertValueFromString(value, out converted);
-        }
-
-        /// <summary>
-        /// Returns a <see cref="DictionaryAttribute"/> associated with
-        /// a given <paramref name="propertyName"/>.
-        /// </summary>
-        /// <param name="propertyName">The property of a <see cref="DictionaryAttribute"/>.</param>
-        /// <returns>Return a <see cref="DictionaryAttribute"/> associated with
-        /// a given <paramref name="propertyName"/>.</returns>
-        public static DictionaryAttribute FromPropertyName(string propertyName)
-        {
-            if (attributeDescriptors.attrsByPropertyName.TryGetValue(propertyName, out DictionaryAttribute value))
+            /// <summary>
+            /// Returns a <see cref="DictionaryAttribute"/> associated with
+            /// a given <paramref name="propertyName"/>.
+            /// </summary>
+            /// <param name="propertyName">The property of a <see cref="DictionaryAttribute"/>.</param>
+            /// <returns>Return a <see cref="DictionaryAttribute"/> associated with
+            /// a given <paramref name="propertyName"/>.</returns>
+            /// <exception cref="ArgumentException">The property name cannot be converted to a <see cref="DictionaryAttribute"/>.</exception>
+            public static DictionaryAttribute FromPropertyName(string propertyName)
             {
-                return value;
+                if (attributeDescriptors.attrsByPropertyName.TryGetValue(propertyName, out DictionaryAttribute value))
+                {
+                    return value;
+                }
+                throw new ArgumentException($"No attribute for property: {propertyName}");
             }
-            throw new ArgumentException($"No attribute for property: {propertyName}");
-        }
-
-        /// <summary>
-        /// Gets the current <see cref="DictionaryAttribute"/>'s property name.
-        /// </summary>
-        /// <param name="attribute">This attribute.</param>
-        /// <returns>The property name string, i.e. <c>"fsa.dict.license"</c>.</returns>
-        public static string GetPropertyName(this DictionaryAttribute attribute)
-        {
-            return attributeDescriptors[attribute].PropertyName;
         }
 
         #region Nested Class: DictionaryAttributeDescriptor

@@ -212,7 +212,7 @@ namespace Morfologik.Stemming
 
             // Sanity check.
             Encoding encoder = Encoder;
-                var encoded = encoder.GetBytes(new char[] { separatorChar });
+            var encoded = encoder.GetBytes(new char[] { separatorChar });
             if (encoded.Length > 1)
             {
                 throw new ArgumentException($"Separator character is not a single byte in encoding {encoding}: {separatorChar}");
@@ -308,7 +308,7 @@ namespace Morfologik.Stemming
             properties.LoadProperties(new StreamReader(metadataStream, System.Text.Encoding.UTF8));
 
             // Handle back-compatibility for encoder specification.
-            if (!properties.ContainsKey(DictionaryAttribute.Encoder.GetPropertyName()))
+            if (!properties.ContainsKey(DictionaryAttribute.Encoder.PropertyName))
             {
                 bool hasDeprecated = properties.ContainsKey("fsa.dict.uses-suffixes") ||
                                         properties.ContainsKey("fsa.dict.uses-infixes") ||
@@ -338,10 +338,10 @@ namespace Morfologik.Stemming
 
                 if (!hasDeprecated)
                 {
-                    throw new IOException($"Use an explicit {DictionaryAttribute.Encoder.GetPropertyName()}={encoder} metadata key: ");
+                    throw new IOException($"Use an explicit {DictionaryAttribute.Encoder.PropertyName}={encoder} metadata key: ");
                 }
 
-                throw new IOException($"Deprecated encoder keys in metadata. Use {DictionaryAttribute.Encoder.GetPropertyName()}={encoder}");
+                throw new IOException($"Deprecated encoder keys in metadata. Use {DictionaryAttribute.Encoder.PropertyName}={encoder}");
             }
 
             foreach (var prop in properties)
@@ -363,7 +363,7 @@ namespace Morfologik.Stemming
 
             foreach (var e in Attributes)
             {
-                properties[e.Key.GetPropertyName()] = e.Value;
+                properties[e.Key.PropertyName] = e.Value;
             }
 
             properties.SaveProperties(writer, $"# {GetType().Name}");

@@ -60,7 +60,7 @@ namespace Morfologik.Stemming
                 //assertThat(e).hasMessageContaining(
                 //    DictionaryAttribute.Encoder.GetInstance().PropertyName);
 
-                assertTrue(e.Message.Contains(DictionaryAttribute.Encoder.GetPropertyName()));
+                assertTrue(e.Message.Contains(DictionaryAttribute.Encoder.PropertyName));
             }
         }
 
