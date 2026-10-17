@@ -5,7 +5,9 @@
 ### Prerequisites
 
 - [PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell) 6.0 or higher (see [this question](http://stackoverflow.com/questions/1825585/determine-installed-powershell-version) to check your PowerShell version)
-- [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
+- [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) (Required only if testing)
+- [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) (Required only if testing)
 
 ### Execution
 
@@ -84,7 +86,7 @@ Then all you need to do is choose the `Morfologik Local Packages` feed from the 
 ### Prerequisites
 
 1. Visual Studio 2022 or higher
-2. [.NET 9.0 SDK or higher](https://dotnet.microsoft.com/download/visual-studio-sdks)
+2. [.NET 10.0 SDK or higher](https://dotnet.microsoft.com/download/visual-studio-sdks)
 
 ### Execution
 
