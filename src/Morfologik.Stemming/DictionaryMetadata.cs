@@ -54,24 +54,24 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Replacement pairs for non-obvious candidate search in a speller dictionary.
         /// </summary>
-        private readonly JCG.OrderedDictionary<string, IList<string>> replacementPairs = new JCG.OrderedDictionary<string, IList<string>>();
+        private readonly JCG.OrderedDictionary<string, IList<string>> replacementPairs;
 
         /// <summary>
         /// Conversion pairs for input conversion, for example to replace ligatures.
         /// </summary>
-        private readonly JCG.OrderedDictionary<string, string> inputConversion = new JCG.OrderedDictionary<string, string>();
+        private readonly JCG.OrderedDictionary<string, string> inputConversion;
 
         /// <summary>
         /// Conversion pairs for output conversion, for example to replace ligatures.
         /// </summary>
-        private readonly JCG.OrderedDictionary<string, string> outputConversion = new JCG.OrderedDictionary<string, string>();
+        private readonly JCG.OrderedDictionary<string, string> outputConversion;
 
         /// <summary>
         /// Equivalent characters (treated similarly as equivalent chars with and without
         /// diacritics). For example, Polish <c>ł</c> can be specified as equivalent to <c>l</c>.
         /// This implements a feature similar to hunspell MAP in the affix file.
         /// </summary>
-        private readonly JCG.OrderedDictionary<char, IList<char>> equivalentChars = new JCG.OrderedDictionary<char, IList<char>>();
+        private readonly JCG.OrderedDictionary<char, IList<char>> equivalentChars;
 
         /// <summary>
         /// All attributes.
@@ -218,6 +218,13 @@ namespace Morfologik.Stemming
                 throw new ArgumentException($"Separator character is not a single byte in encoding {encoding}: {separatorChar}");
             }
             this.separator = encoded[0];
+
+
+            // Morfologik.Stemming specific - instantiate fields only if they were missed above.
+            replacementPairs ??= [];
+            inputConversion ??= [];
+            outputConversion ??= [];
+            equivalentChars ??= [];
         }
 
         static DictionaryMetadata()
