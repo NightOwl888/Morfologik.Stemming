@@ -137,7 +137,11 @@ namespace Morfologik.Fsa
 
                 if (fsa.IsArcFinal(arc))
                 {
-                    current = buffer.AsMemory(0, lastIndex + 1);
+                    // NOTE: In .NET Framework, using the AsMemory() extension method fails when
+                    // tests are run under .NET 10 or newer SDKs because the JIT gets confused about
+                    // the ownership of the ReadOnlyMemory instance. Using the constructor directly bypasses
+                    // this problem.
+                    current = new ReadOnlyMemory<byte>(buffer, 0, lastIndex + 1);
                     return true;
                 }
             }

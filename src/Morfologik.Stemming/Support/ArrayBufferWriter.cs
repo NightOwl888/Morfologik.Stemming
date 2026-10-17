@@ -77,7 +77,11 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Returns the data written to the underlying buffer so far, as a <see cref="ReadOnlyMemory{T}"/>.
         /// </summary>
-        public ReadOnlyMemory<T> WrittenMemory => _buffer.AsMemory(0, _index);
+        // NOTE: In .NET Framework, using the AsMemory() extension method fails when
+        // tests are run under .NET 10 or newer SDKs because the JIT gets confused about
+        // the ownership of the ReadOnlyMemory instance. Using the constructor directly bypasses
+        // this problem.
+        public ReadOnlyMemory<T> WrittenMemory => new ReadOnlyMemory<T>(_buffer, 0, _index);
 
         /// <summary>
         /// Returns the data written to the underlying buffer so far, as a <see cref="ReadOnlySpan{T}"/>.
@@ -184,7 +188,11 @@ namespace Morfologik.Stemming
         {
             CheckAndResizeBuffer(sizeHint);
             Debug.Assert(_buffer.Length > _index);
-            return _buffer.AsMemory(_index);
+            // NOTE: In .NET Framework, using the AsMemory() extension method fails when
+            // tests are run under .NET 10 or newer SDKs because the JIT gets confused about
+            // the ownership of the Memory instance. Using the constructor directly bypasses
+            // this problem.
+            return new Memory<T>(_buffer, _index, _buffer.Length - _index);
         }
 
         /// <summary>
