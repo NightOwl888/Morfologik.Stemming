@@ -3,6 +3,8 @@
 
 using Morfologik.TestFramework;
 using NUnit.Framework;
+using NUnit.Framework.Interfaces;
+using NUnit.Framework.Internal;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -14,6 +16,24 @@ namespace Morfologik.Stemming
 {
     public abstract class ArrayBufferWriterTests<T> where T : IEquatable<T>
     {
+        [TearDown]
+        public void TearDown()
+        {
+            TestResult result = TestExecutionContext.CurrentContext.CurrentResult;
+
+            if (result.ResultState == ResultState.Failure || result.ResultState == ResultState.Error)
+            {
+                string message =
+                    $$"""
+                    {{result.Message}}
+                    (Test: {{result.FullName}})
+                    """;
+
+                result.SetResult(result.ResultState, message, result.StackTrace);
+            }
+        }
+
+
         [Test]
         public void ArrayBufferWriter_Ctor()
         {
