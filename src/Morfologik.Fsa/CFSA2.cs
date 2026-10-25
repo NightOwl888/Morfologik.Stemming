@@ -1,5 +1,4 @@
 ﻿using J2N;
-using J2N.IO;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -158,35 +157,40 @@ namespace Morfologik.Fsa
         /// <param name="stream">The stream to read.</param>
         internal CFSA2(Stream stream)
         {
-            using (DataInputStream input = new DataInputStream(stream, true))
+            // Read flags.
+            ushort flagBits = stream.ReadUInt16BigEndian();
+            flags = 0;
+            flags = (FSAFlags)flagBits;
+
+            if (flagBits != (ushort)flags)
             {
-
-                // Read flags.
-                ushort flagBits = (ushort)input.ReadInt16();
-                flags = 0;
-                flags = (FSAFlags)flagBits;
-
-                if (flagBits != (ushort)flags)
-                {
-                    throw new IOException($"Unrecognized flags: 0x{((int)flagBits).ToHexString()}");
-                }
-
-                this.hasNumbers = (flags & FSAFlags.Numbers) != 0;
-
-                /*
-                 * Read mapping dictionary.
-                 */
-                int labelMappingSize = input.ReadByte() & 0xff;
-
-                LabelMapping = new byte[labelMappingSize];
-
-                input.ReadFully(LabelMapping);
-
-                /*
-                 * Read arcs' data.
-                 */
-                Arcs = ReadRemaining(input);
+                throw new IOException($"Unrecognized flags: 0x{((int)flagBits).ToHexString()}");
             }
+
+            this.hasNumbers = (flags & FSAFlags.Numbers) != 0;
+
+            /*
+             * Read mapping dictionary.
+             */
+            int labelMappingSize = stream.ReadByteRequired() & 0xff;
+
+            LabelMapping = new byte[labelMappingSize];
+
+            stream.ReadExactly(LabelMapping);
+
+            /*
+             * Read arcs' data.
+             */
+            Arcs = ReadRemaining(stream);
+
+            // Load the root node
+            RootNode = GetRootNode();
+        }
+
+        private int GetRootNode()
+        {
+            // Skip dummy node marking terminating state.
+            return GetDestinationNodeOffset(GetFirstArc(epsilon));
         }
 
         /// <summary>
@@ -195,11 +199,7 @@ namespace Morfologik.Fsa
         /// </summary>
         /// <returns>The identifier of the root node of this atomation. Returns
         /// 0 if the start node is also the end node (the automaton is empty).</returns>
-        public override int GetRootNode()
-        {
-            // Skip dummy node marking terminating state.
-            return GetDestinationNodeOffset(GetFirstArc(epsilon));
-        }
+        public override int RootNode { get; }
 
         /// <summary>
         /// Returns the identifier of the first arc leaving <paramref name="node"/>

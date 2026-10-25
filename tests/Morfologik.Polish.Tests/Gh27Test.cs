@@ -15,14 +15,16 @@ namespace Morfologik.Stemming.Polish.Tests
             PolishStemmer stemmer = new PolishStemmer();
 
             string input = "Nie zabrakło oczywiście wpadek. Największym zaskoczeniem okazał się dla nas strój Katarzyny Zielińskiej, której ewidentnie o coś chodziło, ale wciąż nie wiemy o co.";
+
+            DictionaryLookupResult reuse = new();
             foreach (string t in Regex.Split(input.ToLower(new CultureInfo("pl")), "[\\s\\.\\,]+"))
             {
                 Console.Out.WriteLine("> '" + t + "'");
-                foreach (WordData wd in stemmer.Lookup(t))
+                foreach (WordData wd in stemmer.Lookup(t.AsSpan(), reuse))
                 {
                     Console.Out.WriteLine(
                         "  - " +
-                        (wd.GetStem() == null ? "<null>" : wd.GetStem().ToString()) + ", " + wd.GetTag());
+                        (wd.Stem.IsEmpty ? "<null>" : wd.Stem.ToString()) + ", " + wd.Tag.ToString());
                 }
                 Console.Out.WriteLine();
             }

@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Lucene.Net.Tests.ICU" />
+    <InternalsVisibleTo Include="Morfologik.Fsa.Tests" />
   </ItemGroup>
 
 </Project>

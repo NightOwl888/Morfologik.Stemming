@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Morfologik.Polish\Morfologik.Polish.csproj">
+      <SetTargetFramework>$(SetTargetFramework)</SetTargetFramework>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>

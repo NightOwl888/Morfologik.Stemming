@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
 namespace Morfologik.Fsa
 {
@@ -28,20 +29,23 @@ namespace Morfologik.Fsa
         /// order of input sequences used at automaton construction time.
         /// </summary>
         /// <param name="sequence">The byte sequence to calculate perfect hash for.</param>
-        /// <param name="start">Start index in the sequence array.</param>
-        /// <param name="length">Length of the byte sequence, must be at least 1.</param>
-        /// <param name="node">The node to start traversal from, typically the root node (<see cref="FSA.GetRootNode()"/>).</param>
+        /// <param name="node">The node to start traversal from, typically the root node (<see cref="FSA.RootNode"/>).</param>
         /// <returns>
         /// Returns a unique integer assigned to the input sequence in the automaton (reflecting
         /// the number of that sequence in the input used to build the automaton). Returns a negative
         /// integer if the input sequence was not part of the input from which the automaton was created.
         /// The type of mismatch is a constant defined in <see cref="MatchResult"/>.
         /// </returns>
-        /// <seealso cref="PerfectHash(byte[])"/>
-        public int PerfectHash(byte[] sequence, int start, int length, int node)
+        /// <seealso cref="PerfectHash(ReadOnlySpan{byte})"/>
+        public int PerfectHash(ReadOnlySpan<byte> sequence, int node)
         {
+            int start = 0;
+            int length = sequence.Length;
+
             Debug.Assert((fsa.Flags & FSAFlags.Numbers) != 0, $"FSA not built with {FSAFlags.Numbers} option.");
-            Debug.Assert(length > 0, "Must be a non-empty sequence.");
+
+            if (sequence.IsEmpty)
+                throw new ArgumentException("Must be a non-empty sequence.", nameof(sequence));
 
             int hash = 0;
             int end = start + length - 1;
@@ -67,13 +71,13 @@ namespace Morfologik.Fsa
                     if (fsa.IsArcTerminal(arc))
                     {
                         /* The automaton contains a prefix of the input sequence. */
-                        return MatchResult.AutomatonHasPrefix;
+                        return (int)MatchResultKind.AutomatonHasPrefix;
                     }
 
                     // The sequence is a prefix of one of the sequences stored in the automaton.
                     if (seqIndex == end)
                     {
-                        return MatchResult.SequenceIsAPrefix;
+                        return (int)MatchResultKind.SequenceIsAPrefix;
                     }
 
                     // Make a transition along the arc, go the target node's first arc.
@@ -98,13 +102,13 @@ namespace Morfologik.Fsa
 
             if (seqIndex > start)
             {
-                return MatchResult.AutomatonHasPrefix;
+                return (int)MatchResultKind.AutomatonHasPrefix;
             }
             else
             {
                 // Labels of this node ended without a match on the sequence. 
                 // Perfect hash does not exist.
-                return MatchResult.NoMatch;
+                return (int)MatchResultKind.NoMatch;
             }
         }
 
@@ -120,30 +124,29 @@ namespace Morfologik.Fsa
         /// integer if the input sequence was not part of the input from which the automaton was created.
         /// The type of mismatch is a constant defined in <see cref="MatchResult"/>.
         /// </returns>
-        /// <seealso cref="PerfectHash(byte[], int, int, int)"/>
-        public int PerfectHash(byte[] sequence)
+        /// <seealso cref="PerfectHash(ReadOnlySpan{byte}, int)"/>
+        public int PerfectHash(ReadOnlySpan<byte> sequence)
         {
-            return PerfectHash(sequence, 0, sequence.Length, fsa.GetRootNode());
+            return PerfectHash(sequence, fsa.RootNode);
         }
 
         /// <summary>
-        /// Same as <see cref="Match(byte[], int, int, int)"/>, but allows passing
-        /// a reusable <see cref="MatchResult"/> object so that no intermediate garbage is
-        /// produced.
+        /// Finds a matching path in the dictionary for a given sequence of labels from
+        /// <paramref name="sequence"/> and starting at node <paramref name="node"/>.
         /// </summary>
-        /// <param name="reuse">The <see cref="MatchResult"/> to reuse.</param>
         /// <param name="sequence">Input sequence to look for in the automaton.</param>
-        /// <param name="start">Start index in the sequence array.</param>
-        /// <param name="length">Length of the byte sequence, must be at least 1.</param>
-        /// <param name="node">The node to start traversal from, typically the root node (<see cref="FSA.GetRootNode()"/>).</param>
-        /// <returns>The same object as <paramref name="reuse"/>, but with updated match <see cref="MatchResult.Kind"/>
+        /// <param name="node">The node to start traversal from, typically the root node (<see cref="FSA.RootNode"/>).</param>
+        /// <returns>A <see cref="MatchResult"/> with match <see cref="MatchResult.Kind"/>
         /// and other relevant fields.</returns>
-        public MatchResult Match(MatchResult reuse, byte[] sequence, int start, int length, int node)
+        /// <seealso cref="Match(ReadOnlySpan{byte})"/>
+        public MatchResult Match(ReadOnlySpan<byte> sequence, int node)
         {
+            int start = 0;
+            int length = sequence.Length;
+
             if (node == 0)
             {
-                reuse.Reset(MatchResult.NoMatch, start, node);
-                return reuse;
+                return new MatchResult(MatchResultKind.NoMatch, start, node);
             }
 
             FSA fsa = this.fsa;
@@ -156,15 +159,13 @@ namespace Morfologik.Fsa
                     if (i + 1 == end && fsa.IsArcFinal(arc))
                     {
                         /* The automaton has an exact match of the input sequence. */
-                        reuse.Reset(MatchResult.ExactMatch, i, node);
-                        return reuse;
+                        return new MatchResult(MatchResultKind.ExactMatch, i, node);
                     }
 
                     if (fsa.IsArcTerminal(arc))
                     {
                         /* The automaton contains a prefix of the input sequence. */
-                        reuse.Reset(MatchResult.AutomatonHasPrefix, i + 1, node);
-                        return reuse;
+                        return new MatchResult(MatchResultKind.AutomatonHasPrefix, i + 1, node);
                     }
 
                     // Make a transition along the arc.
@@ -174,49 +175,17 @@ namespace Morfologik.Fsa
                 {
                     if (i > start)
                     {
-                        reuse.Reset(MatchResult.AutomatonHasPrefix, i, node);
+                        return new MatchResult(MatchResultKind.AutomatonHasPrefix, i, node);
                     }
                     else
                     {
-                        reuse.Reset(MatchResult.NoMatch, i, node);
+                        return new MatchResult(MatchResultKind.NoMatch, i, node);
                     }
-                    return reuse;
                 }
             }
 
             /* The sequence is a prefix of at least one sequence in the automaton. */
-            reuse.Reset(MatchResult.SequenceIsAPrefix, 0, node);
-            return reuse;
-        }
-
-        /// <summary>
-        /// Finds a matching path in the dictionary for a given sequence of labels from
-        /// <paramref name="sequence"/> and starting at node <paramref name="node"/>.
-        /// </summary>
-        /// <param name="sequence">Input sequence to look for in the automaton.</param>
-        /// <param name="start">Start index in the sequence array.</param>
-        /// <param name="length">Length of the byte sequence, must be at least 1.</param>
-        /// <param name="node">The node to start traversal from, typically the root node (<see cref="FSA.GetRootNode()"/>).</param>
-        /// <returns><see cref="MatchResult"/> with updated match <see cref="MatchResult.Kind"/>.</returns>
-        /// <seealso cref="Match(byte[], int)"/>
-        /// <seealso cref="Match(byte[])"/>
-        public MatchResult Match(byte[] sequence, int start, int length, int node)
-        {
-            return Match(new MatchResult(), sequence, start, length, node);
-        }
-
-        /// <summary>
-        /// Finds a matching path in the dictionary for a given sequence of labels from
-        /// <paramref name="sequence"/> and starting at node <paramref name="node"/>.
-        /// </summary>
-        /// <param name="sequence">Input sequence to look for in the automaton.</param>
-        /// <param name="node">The node to start traversal from, typically the root node (<see cref="FSA.GetRootNode()"/>).</param>
-        /// <returns><see cref="MatchResult"/> with updated match <see cref="MatchResult.Kind"/>.</returns>
-        /// <seealso cref="Match(byte[], int, int, int)"/>
-        /// <seealso cref="Match(byte[])"/>
-        public MatchResult Match(byte[] sequence, int node)
-        {
-            return Match(sequence, 0, sequence.Length, node);
+            return new MatchResult(MatchResultKind.SequenceIsAPrefix, 0, node);
         }
 
         /// <summary>
@@ -225,11 +194,10 @@ namespace Morfologik.Fsa
         /// </summary>
         /// <param name="sequence">Input sequence to look for in the automaton.</param>
         /// <returns><see cref="MatchResult"/> with updated match <see cref="MatchResult.Kind"/>.</returns>
-        /// <seealso cref="Match(byte[], int, int, int)"/>
-        /// <seealso cref="Match(byte[], int)"/>
-        public MatchResult Match(byte[] sequence)
+        /// <seealso cref="Match(ReadOnlySpan{byte}, int)"/>
+        public MatchResult Match(ReadOnlySpan<byte> sequence)
         {
-            return Match(sequence, fsa.GetRootNode());
+            return Match(sequence, fsa.RootNode);
         }
     }
 }

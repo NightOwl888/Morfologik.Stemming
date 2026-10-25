@@ -1,5 +1,5 @@
-﻿using J2N.IO;
-using NUnit.Framework;
+﻿using NUnit.Framework;
+using System;
 using System.Text;
 
 namespace Morfologik.Stemming
@@ -11,16 +11,16 @@ namespace Morfologik.Stemming
         public void TestSharedPrefix()
         {
             Assert.AreEqual(4, BufferUtils.SharedPrefixLength(
-                  ByteBuffer.Wrap(b("abcdef")),
-          ByteBuffer.Wrap(b("abcd__"))));
+                b("abcdef"),
+                b("abcd__")));
 
             Assert.AreEqual(0, BufferUtils.SharedPrefixLength(
-                    ByteBuffer.Wrap(b("")),
-                ByteBuffer.Wrap(b("_"))));
+                b(""),
+                b("_")));
 
             Assert.AreEqual(2, BufferUtils.SharedPrefixLength(
-                    ByteBuffer.Wrap(b("abcdef"), 2, 2),
-                ByteBuffer.Wrap(b("___cd__"), 3, 2)));
+                b("abcdef").AsSpan(2, 2),
+                b("___cd__").AsSpan(3, 2)));
 
       //      Assertions.assertThat(
       //        BufferUtils.SharedPrefixLength(

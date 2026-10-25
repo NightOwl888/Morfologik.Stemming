@@ -1,5 +1,4 @@
-﻿using J2N.IO;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -13,7 +12,7 @@ namespace Morfologik.Fsa
     /// Construction of Finite-State Automata and Transducers, and Their Use in the
     /// Natural Language Processing</i> (PhD thesis, Technical University of Gdansk).
     /// </summary>
-    public abstract class FSA : IEnumerable<ByteBuffer>
+    public abstract class FSA : IEnumerable<ReadOnlyMemory<byte>>
     {
         /// <summary>
         /// Returns the identifier of the root node of this automaton. Returns
@@ -21,7 +20,7 @@ namespace Morfologik.Fsa
         /// </summary>
         /// <returns>The identifier of the root node of this atomation. Returns
         /// 0 if the start node is also the end node (the automaton is empty).</returns>
-        public abstract int GetRootNode();
+        public abstract int RootNode { get; }
 
         /// <summary>
         /// Returns the identifier of the first arc leaving <paramref name="node"/>
@@ -148,7 +147,7 @@ namespace Morfologik.Fsa
         /// state (node) and ending in final nodes. This corresponds to a set of
         /// suffixes of a given prefix from all sequences stored in the automaton.
         /// <para/>
-        /// The element of the returned enumerable is a <see cref="ByteBuffer"/> whose contents changes on
+        /// The element of the returned enumerable is a <see cref="ReadOnlyMemory{Byte}"/> whose contents changes on
         /// each call to <see cref="IEnumerator.MoveNext()"/>. To keep the contents between calls
         /// to <see cref="IEnumerator.MoveNext()"/>, one must copy the buffer to some other
         /// location.
@@ -159,15 +158,15 @@ namespace Morfologik.Fsa
         /// </summary>
         /// <param name="node">Identifier of the starting node from which to return subsequences.</param>
         /// <returns>An <see cref="IEnumerable{ByteBuffer}"/> over all sequences encoded starting at the given node.</returns>
-        public virtual IEnumerable<ByteBuffer> GetSequences(int node)
+        public virtual IEnumerable<ReadOnlyMemory<byte>> GetSequences(int node)
         {
             if (node == 0)
-                return new ByteBuffer[0];
+                return Array.Empty<ReadOnlyMemory<byte>>();
 
             return new ByteSequenceEnumerable(this, node);
         }
 
-        private class ByteSequenceEnumerable : IEnumerable<ByteBuffer>
+        private class ByteSequenceEnumerable : IEnumerable<ReadOnlyMemory<byte>>
         {
             private readonly FSA fsa;
             private readonly int node;
@@ -177,7 +176,7 @@ namespace Morfologik.Fsa
                 this.node = node;
             }
 
-            public IEnumerator<ByteBuffer> GetEnumerator()
+            public IEnumerator<ReadOnlyMemory<byte>> GetEnumerator()
             {
                 return new ByteSequenceEnumerator(this.fsa, node);
             }
@@ -190,15 +189,15 @@ namespace Morfologik.Fsa
         /// <see cref="IEnumerable"/>.
         /// </summary>
         /// <returns>Returns all sequences encoded in the automaton.</returns>
-        public IEnumerable<ByteBuffer> GetSequences()
+        public IEnumerable<ReadOnlyMemory<byte>> GetSequences()
         {
-            return GetSequences(GetRootNode());
+            return GetSequences(RootNode);
         }
 
         /// <summary>
         /// Returns an enumerator over all binary sequences starting from the initial FSA
         /// state (node) and ending in final nodes. The returned enumerator is a
-        /// <see cref="ByteBuffer"/> whose contents changes on each call to
+        /// <see cref="ReadOnlyMemory{Byte}"/> whose contents changes on each call to
         /// <see cref="IEnumerator.MoveNext()"/>. The keep the contents between calls to
         /// <see cref="IEnumerator.MoveNext()"/>, one must copy the buffer to some other location.
         /// <para/>
@@ -206,7 +205,7 @@ namespace Morfologik.Fsa
         /// by a byte array and that the content of the byte buffer starts at the
         /// array's index 0.
         /// </summary>
-        public IEnumerator<ByteBuffer> GetEnumerator()
+        public IEnumerator<ReadOnlyMemory<byte>> GetEnumerator()
         {
             return GetSequences().GetEnumerator();
         }
@@ -236,7 +235,7 @@ namespace Morfologik.Fsa
         /// <returns>Returns the argument (for access to anonymous class fields).</returns>
         public virtual T VisitInPostOrder<T>(T v) where T : IStateVisitor
         {
-            return VisitInPostOrder(v, GetRootNode());
+            return VisitInPostOrder(v, RootNode);
         }
 
         /// <summary>
@@ -282,7 +281,7 @@ namespace Morfologik.Fsa
         /// <returns>Returns the argument (for access to anonymous class fields).</returns>
         public virtual T VisitInPreOrder<T>(T v) where T : IStateVisitor
         {
-            return VisitInPreOrder(v, GetRootNode());
+            return VisitInPreOrder(v, RootNode);
         }
 
         /// <summary>
@@ -304,21 +303,28 @@ namespace Morfologik.Fsa
         /// Reads all remaining bytes from an input stream and returns
         /// them as a byte array.
         /// </summary>
-        /// <param name="input">The input stream.</param>
+        /// <param name="stream">The input stream.</param>
         /// <returns>Reads all remaining bytes from an input stream and returns
         /// them as a byte array.</returns>
         /// <exception cref="IOException">Rethrown if an I/O exception occurs.</exception>
-        internal static byte[] ReadRemaining(DataInputStream input)
+        internal static byte[] ReadRemaining(Stream stream)
         {
-            using (var baos = new MemoryStream())
+            if (stream.CanSeek)
             {
-                byte[] buffer = new byte[1024 * 8];
-                int len;
-                while ((len = input.Read(buffer, 0, buffer.Length)) > 0)
+                long remaining = stream.Length - stream.Position;
+
+                if ((ulong)remaining <= int.MaxValue)
                 {
-                    baos.Write(buffer, 0, len);
+                    byte[] buffer = new byte[(int)remaining];
+                    stream.ReadExactly(buffer);
+                    return buffer;
                 }
-                return baos.ToArray();
+            }
+
+            using (var output = new MemoryStream())
+            {
+                stream.CopyTo(output);
+                return output.ToArray();
             }
         }
 

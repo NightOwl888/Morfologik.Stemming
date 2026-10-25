@@ -56,8 +56,11 @@ namespace Morfologik.Stemming
             //Assertions.assertThat(other.getEncoder().charset()).isEqualTo(encoding);
             //Assertions.assertThat(other.getSequenceEncoderType()).isEqualTo(encoder);
             Assert.AreEqual((byte)'|', other.Separator);
-            Assert.AreEqual(encoding, other.Decoder);
-            Assert.AreEqual(encoding, other.Encoder);
+            // Morfologik.Stemming: Since we are turning on fallback exceptions in the production code
+            // we need to test the encodings by name rather than by ToString(), since the fallback may have a different
+            // internal type.
+            Assert.AreEqual(encoding.EncodingName, other.Decoder.EncodingName);
+            Assert.AreEqual(encoding.EncodingName, other.Encoder.EncodingName);
             Assert.AreEqual(encoder, other.SequenceEncoderType);
         }
     }

@@ -1,9 +1,6 @@
 ﻿using Morfologik.Fsa;
 using Morfologik.Stemming.Support;
-using System;
 using System.IO;
-using System.Net;
-using System.Net.Http;
 
 namespace Morfologik.Stemming
 {
@@ -65,40 +62,6 @@ namespace Morfologik.Stemming
             using (var fsaStream = File.OpenRead(location))
             using (var metaDataStream = File.OpenRead(metadata))
                 return Read(fsaStream, metaDataStream);
-        }
-
-        /// <summary>
-        /// Attempts to load a dictionary using the URL to the FSA file and the
-        /// expected metadata extension.
-        /// </summary>
-        /// <param name="dictURL">The URL pointing to the dictionary file (<c>*.dict</c>).</param>
-        /// <returns>An instantiated dictionary.</returns>
-        /// <exception cref="IOException">If an I/O error occurs.</exception>
-        public static Dictionary Read(Uri dictURL)
-        {
-            Uri expectedMetadataURL;
-            try
-            {
-                string external = dictURL.AbsoluteUri;
-                expectedMetadataURL = new Uri(DictionaryMetadata.GetExpectedMetadataFileName(external));
-            }
-            catch (UriFormatException e)
-            {
-                throw new IOException("Couldn't construct relative feature map URL for: " + dictURL, e);
-            }
-
-            try
-            {
-                using var httpClient = new HttpClient();
-                using var fsaStream = httpClient.GetStreamAsync(dictURL).GetAwaiter().GetResult();
-                using var metadataStream = httpClient.GetStreamAsync(expectedMetadataURL).GetAwaiter().GetResult();
-
-                return Read(fsaStream, metadataStream);
-            }
-            catch (HttpRequestException e)
-            {
-                throw new IOException("Error retrieving data from the specified URLs.", e);
-            }
         }
 
         /// <summary>

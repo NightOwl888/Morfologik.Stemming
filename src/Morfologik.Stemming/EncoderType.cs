@@ -41,13 +41,13 @@
             switch(encoderType)
             {
                 case EncoderType.Suffix:
-                    return new TrimSuffixEncoder();
+                    return TrimSuffixEncoder.Instance;
                 case EncoderType.Prefix:
-                    return new TrimPrefixAndSuffixEncoder();
+                    return TrimPrefixAndSuffixEncoder.Instance;
                 case EncoderType.Infix:
-                    return new TrimInfixAndSuffixEncoder();
+                    return TrimInfixAndSuffixEncoder.Instance;
                 default:
-                    return new NoEncoder();
+                    return NoEncoder.Instance;
             }
         }
     }

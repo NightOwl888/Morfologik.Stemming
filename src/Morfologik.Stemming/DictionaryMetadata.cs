@@ -1,12 +1,9 @@
 ﻿using J2N;
-using J2N.Collections.Generic.Extensions;
-using J2N.Text;
 using Morfologik.Stemming.Support;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
 using JCG = J2N.Collections.Generic;
 
@@ -57,24 +54,24 @@ namespace Morfologik.Stemming
         /// <summary>
         /// Replacement pairs for non-obvious candidate search in a speller dictionary.
         /// </summary>
-        private readonly IDictionary<string, IList<string>> replacementPairs = new JCG.OrderedDictionary<string, IList<string>>();
+        private readonly JCG.OrderedDictionary<string, IList<string>> replacementPairs;
 
         /// <summary>
         /// Conversion pairs for input conversion, for example to replace ligatures.
         /// </summary>
-        private readonly IDictionary<string, string> inputConversion = new JCG.OrderedDictionary<string, string>();
+        private readonly JCG.OrderedDictionary<string, string> inputConversion;
 
         /// <summary>
         /// Conversion pairs for output conversion, for example to replace ligatures.
         /// </summary>
-        private readonly IDictionary<string, string> outputConversion = new JCG.OrderedDictionary<string, string>();
+        private readonly JCG.OrderedDictionary<string, string> outputConversion;
 
         /// <summary>
         /// Equivalent characters (treated similarly as equivalent chars with and without
         /// diacritics). For example, Polish <c>ł</c> can be specified as equivalent to <c>l</c>.
         /// This implements a feature similar to hunspell MAP in the affix file.
         /// </summary>
-        private readonly IDictionary<char, IList<char>> equivalentChars = new JCG.OrderedDictionary<char, IList<char>>();
+        private readonly JCG.OrderedDictionary<char, IList<char>> equivalentChars;
 
         /// <summary>
         /// All attributes.
@@ -133,7 +130,7 @@ namespace Morfologik.Stemming
         {
             this.boolAttributes = new Dictionary<DictionaryAttribute, bool>();
             var tempAttributes = new Dictionary<DictionaryAttribute, string>();
-            IDictionary<DictionaryAttribute, string> attributeMap = new Dictionary<DictionaryAttribute, string>(DefaultAttributes);
+            Dictionary<DictionaryAttribute, string> attributeMap = new Dictionary<DictionaryAttribute, string>(DefaultAttributes);
             foreach (var attr in attrs)
             {
                 tempAttributes[attr.Key] = attr.Value;
@@ -142,59 +139,46 @@ namespace Morfologik.Stemming
             this.attributes = JCG.Extensions.DictionaryExtensions.AsReadOnly(tempAttributes); // Morfologik.Stemming: Changed this to create a read-only instance in the constructor instead of on each call to the Attributes property.
 
             // Convert some attrs from the map to local fields for performance reasons.
-            ISet<DictionaryAttribute> requiredAttributes = new HashSet<DictionaryAttribute>(RequiredAttributes);
+            JCG.HashSet<DictionaryAttribute> requiredAttributes = new JCG.HashSet<DictionaryAttribute>(RequiredAttributes);
 
             foreach (var e in attributeMap)
             {
                 requiredAttributes.Remove(e.Key);
 
                 // Run validation and conversion on all of them.
-                object value = e.Key.FromString(e.Value);
                 switch (e.Key)
                 {
                     case DictionaryAttribute.Encoding:
                         this.encoding = e.Value;
-                        this.charset = (Encoding)value;
+                        e.Key.ConvertValueFromString(e.Value, out this.charset);
                         break;
 
                     case DictionaryAttribute.Separator:
-                        this.separatorChar = (char)value;
+                        e.Key.ConvertValueFromString(e.Value, out this.separatorChar);
                         break;
 
                     case DictionaryAttribute.Culture:
-                        this.locale = (CultureInfo)value;
+                        e.Key.ConvertValueFromString(e.Value, out this.locale);
                         break;
 
                     case DictionaryAttribute.Encoder:
-                        this.encoderType = (EncoderType)value;
+                        e.Key.ConvertValueFromString(e.Value, out this.encoderType);
                         break;
 
                     case DictionaryAttribute.InputConversion:
-                        {
-                            IDictionary<string, string> gvalue = (IDictionary<string, string>)value;
-                            this.inputConversion = gvalue;
-                        }
+                        e.Key.ConvertValueFromString(e.Value, out this.inputConversion);
                         break;
 
                     case DictionaryAttribute.OutputConversion:
-                        {
-                            IDictionary<string, string> gvalue = (IDictionary<string, string>)value;
-                            this.outputConversion = gvalue;
-                        }
+                        e.Key.ConvertValueFromString(e.Value, out this.outputConversion);
                         break;
 
                     case DictionaryAttribute.ReplacementPairs:
-                        {
-                            IDictionary<string, IList<string>> gvalue = (IDictionary<string, IList<string>>)value;
-                            this.replacementPairs = gvalue;
-                        }
+                        e.Key.ConvertValueFromString(e.Value, out this.replacementPairs);
                         break;
 
                     case DictionaryAttribute.EquivalentChars:
-                        {
-                            IDictionary<char, IList<char>> gvalue = (IDictionary<char, IList<char>>)value;
-                            this.equivalentChars = gvalue;
-                        }
+                        e.Key.ConvertValueFromString(e.Value, out this.equivalentChars);
                         break;
 
                     case DictionaryAttribute.IgnorePunctuation:
@@ -205,36 +189,42 @@ namespace Morfologik.Stemming
                     case DictionaryAttribute.ConvertCase:
                     case DictionaryAttribute.RunOnWords:
                     case DictionaryAttribute.FrequencyIncluded:
-                        this.boolAttributes[e.Key] = (bool)value;
+                        e.Key.ConvertValueFromString(e.Value, out bool bvalue);
+                        this.boolAttributes[e.Key] = bvalue;
                         break;
 
                     case DictionaryAttribute.Author:
                     case DictionaryAttribute.License:
                     case DictionaryAttribute.CreationDate:
                         // Just run validation.
-                        e.Key.FromString(e.Value);
+                        e.Key.ConvertValueFromString(e.Value, out string _);
                         break;
 
                     default:
-                        throw new Exception("Unexpected code path (attribute should be handled but is not): " + e.Key);
+                        throw new Exception($"Unexpected code path (attribute should be handled but is not): {e.Key}");
                 }
             }
 
             if (requiredAttributes.Count > 0)
             {
-                throw new ArgumentException(string.Format(StringFormatter.CurrentCulture, "At least one the required attributes was not provided: {0}",
-                    requiredAttributes));
+                throw new ArgumentException($"At least one the required attributes was not provided: {requiredAttributes}");
             }
 
             // Sanity check.
             Encoding encoder = Encoder;
-                var encoded = encoder.GetBytes(new char[] { separatorChar });
+            var encoded = encoder.GetBytes(new char[] { separatorChar });
             if (encoded.Length > 1)
             {
-                throw new ArgumentException("Separator character is not a single byte in encoding "
-                    + encoding + ": " + separatorChar);
+                throw new ArgumentException($"Separator character is not a single byte in encoding {encoding}: {separatorChar}");
             }
             this.separator = encoded[0];
+
+
+            // Morfologik.Stemming specific - instantiate fields only if they were missed above.
+            replacementPairs ??= [];
+            inputConversion ??= [];
+            outputConversion ??= [];
+            equivalentChars ??= [];
         }
 
         static DictionaryMetadata()
@@ -277,7 +267,7 @@ namespace Morfologik.Stemming
         /// Returns the expected name of the metadata file, based on the name of the
         /// dictionary file. The expected name is resolved by truncating any
         /// file extension of <paramref name="dictionaryFile"/> and appending
-        /// <see cref="DictionaryMetadata.MetadataFileExtension"/>.
+        /// <see cref="MetadataFileExtension"/>.
         /// </summary>
         /// <param name="dictionaryFile">The name of the dictionary (<c>*.dict</c>) file. </param>
         /// <returns>Returns the expected name of the metadata file.</returns>
@@ -287,11 +277,11 @@ namespace Morfologik.Stemming
             string featuresName;
             if (dotIndex >= 0)
             {
-                featuresName = dictionaryFile.Substring(0, dotIndex - 0) + "." + MetadataFileExtension; // Corrected 2nd parameter
+                featuresName = $"{dictionaryFile.Substring(0, dotIndex - 0)}.{MetadataFileExtension}"; // Corrected 2nd parameter
             }
             else
             {
-                featuresName = dictionaryFile + "." + MetadataFileExtension;
+                featuresName = $"{dictionaryFile}.{MetadataFileExtension}";
             }
 
             return featuresName;
@@ -325,15 +315,15 @@ namespace Morfologik.Stemming
             properties.LoadProperties(new StreamReader(metadataStream, System.Text.Encoding.UTF8));
 
             // Handle back-compatibility for encoder specification.
-            if (!properties.ContainsKey(DictionaryAttributeExtensions.Encoder.PropertyName))
+            if (!properties.ContainsKey(DictionaryAttribute.Encoder.PropertyName))
             {
                 bool hasDeprecated = properties.ContainsKey("fsa.dict.uses-suffixes") ||
                                         properties.ContainsKey("fsa.dict.uses-infixes") ||
                                         properties.ContainsKey("fsa.dict.uses-prefixes");
 
-                bool usesSuffixes = Boolean.Parse(properties.GetProperty("fsa.dict.uses-suffixes", "true")); // TODO: Possible parse exception here
-                bool usesPrefixes = Boolean.Parse(properties.GetProperty("fsa.dict.uses-prefixes", "false")); // TODO: Possible parse exception here
-                bool usesInfixes = Boolean.Parse(properties.GetProperty("fsa.dict.uses-infixes", "false")); // TODO: Possible parse exception here
+                bool usesSuffixes = bool.Parse(properties.GetProperty("fsa.dict.uses-suffixes", "true")); // TODO: Possible parse exception here
+                bool usesPrefixes = bool.Parse(properties.GetProperty("fsa.dict.uses-prefixes", "false")); // TODO: Possible parse exception here
+                bool usesInfixes = bool.Parse(properties.GetProperty("fsa.dict.uses-infixes", "false")); // TODO: Possible parse exception here
 
                 EncoderType encoder;
                 if (usesInfixes)
@@ -355,13 +345,10 @@ namespace Morfologik.Stemming
 
                 if (!hasDeprecated)
                 {
-                    throw new IOException("Use an explicit " +
-                        DictionaryAttributeExtensions.Encoder.PropertyName + "=" + encoder.ToString() +
-                        " metadata key: ");
+                    throw new IOException($"Use an explicit {DictionaryAttribute.Encoder.PropertyName}={encoder} metadata key: ");
                 }
 
-                throw new IOException("Deprecated encoder keys in metadata. Use " +
-                    DictionaryAttributeExtensions.Encoder.PropertyName + "=" + encoder.ToString());
+                throw new IOException($"Deprecated encoder keys in metadata. Use {DictionaryAttribute.Encoder.PropertyName}={encoder}");
             }
 
             foreach (var prop in properties)
@@ -383,10 +370,10 @@ namespace Morfologik.Stemming
 
             foreach (var e in Attributes)
             {
-                properties[e.Key.GetPropertyName()] = e.Value;
+                properties[e.Key.PropertyName] = e.Value;
             }
 
-            properties.SaveProperties(writer, "# " + GetType().Name);
+            properties.SaveProperties(writer, $"# {GetType().Name}");
         }
     }
 }
